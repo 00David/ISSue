@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// Structure de la réponse de l'API Open Notify (ISS)
+// Open Notify (ISS) API response structure
 type ISSRawResponse struct {
 	Message     string `json:"message"`
 	Timestamp   int64  `json:"timestamp"`
@@ -17,7 +17,7 @@ type ISSRawResponse struct {
 	} `json:"iss_position"`
 }
 
-// Structure qu'on renvoie au client
+// Structure sent back to client
 type ISSPosition struct {
 	Timestamp int64  `json:"timestamp"`
 	Latitude  string `json:"latitude"`
@@ -26,44 +26,44 @@ type ISSPosition struct {
 
 // "/api/iss"
 func ISSHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Requête reçue sur '/api/iss'")
+	fmt.Println("Request received on '/api/iss'")
 
-	// Uniquement GET
+	// Only GET
 	if r.Method != http.MethodGet {
-		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Appel à l'API Open Notify
+	// Calls Open Notify API
 	resp, err := http.Get("http://api.open-notify.org/iss-now.json")
 	if err != nil {
-		http.Error(w, "Erreur API ISS", http.StatusBadGateway)
+		http.Error(w, "Error ISS API", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
 
-	// Lecture du body
+	// Body reading
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Erreur lecture réponse", http.StatusInternalServerError)
+		http.Error(w, "Error response reading", http.StatusInternalServerError)
 		return
 	}
 
-	// Parsing JSON
+	// JSON parsing
 	var raw ISSRawResponse
 	if err := json.Unmarshal(body, &raw); err != nil {
-		http.Error(w, "Erreur parsing JSON", http.StatusInternalServerError)
+		http.Error(w, "Error JSON parsing", http.StatusInternalServerError)
 		return
 	}
 
-	// Construction de la réponse
+	// Response construction
 	position := ISSPosition{
 		Latitude:  raw.ISSPosition.Latitude,
 		Longitude: raw.ISSPosition.Longitude,
 		Timestamp: raw.Timestamp,
 	}
 
-	// Envoi au client en JSON
+	// JSON sent to client
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(position)
 }

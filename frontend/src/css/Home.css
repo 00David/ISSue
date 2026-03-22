@@ -1,0 +1,80 @@
+/* ===== BANNER ===== */
+.logo-banner {
+    width: 100%;
+    max-width: 680px;
+    margin: 2rem auto;
+    display: block;
+}
+
+/* ===== DISPLAY ===== */
+#Home-display {
+    display: grid;
+    grid-template-columns: 1fr 8fr 1fr;
+    min-height: 100vh;
+    gap: 1rem;
+}
+
+#Home-left-display {
+    /* Left margin (10%) */
+    /*background-color: black;*/
+}
+
+#Home-center-display {
+    /* Main content (80%) */
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 0;
+}
+
+#Home-right-display {
+    /* Right margin (10%) */
+    /*background-color: black;*/
+}
+
+/* ===== ISS MAP ===== */
+#Home-map {
+    height: 400px;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#Home-iss-position-display {
+    display: 'flex';
+    justify-content: 'center';
+    align-self: center;
+    align-items: center;
+    width: 50%;
+    min-height: 400px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(74, 123, 167, 0.2);
+    border-top-color: #4a7ba7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive : on little screen, only one column */
+@media (max-width: 768px) {
+    #Home-display {
+        grid-template-columns: 1fr;
+    }
+    
+    #Home-left-display,
+    #Home-right-display {
+        display: none;
+    }
+    
+    #Home-center-display {
+        padding: 1rem;
+    }
+}
