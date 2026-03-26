@@ -1,10 +1,12 @@
-package handlers
+package services
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/00David/ISSue/backend/ressources/entities"
 )
 
 // Open Notify (ISS) API response structure
@@ -17,16 +19,9 @@ type ISSRawResponse struct {
 	} `json:"iss_position"`
 }
 
-// Structure sent back to client
-type ISSPosition struct {
-	Timestamp int64  `json:"timestamp"`
-	Latitude  string `json:"latitude"`
-	Longitude string `json:"longitude"`
-}
-
-// "/api/iss"
+// "/api/get-iss-current-position"
 func ISSHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Request received on '/api/iss'")
+	fmt.Println("Request received on '/api/get-iss-current-position'")
 
 	// Only GET
 	if r.Method != http.MethodGet {
@@ -57,7 +52,7 @@ func ISSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Response construction
-	position := ISSPosition{
+	position := entities.ISSPosition{
 		Latitude:  raw.ISSPosition.Latitude,
 		Longitude: raw.ISSPosition.Longitude,
 		Timestamp: raw.Timestamp,

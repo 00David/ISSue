@@ -9,21 +9,26 @@ function ISS_Position(props) {
 
     useEffect(() => {
 
-        const fetchISSPosition = async () => {
+        const fetchISSPosition = async (firstLoad) => {
             try {
-                const response = await axios.get('/api/iss');
+                const response = await axios.get('/api/get-iss-current-position');
                 const { latitude, longitude } = response.data;
                 
                 // Convertion string to int and update
                 setISSPosition([parseFloat(latitude), parseFloat(longitude)]);
-                setLoading(false);
+                if (firstLoad) setLoading(false);
 
             } catch (error) {
                 console.error("Error while fetching ISS position:\n", error);
             }
         };
-        fetchISSPosition();
+        fetchISSPosition(true);
 
+        const interval = setInterval(() => {
+            fetchISSPosition(false);
+        }, 5000)
+
+        return () => clearInterval(interval) // interval cleanup
     }, []);
 
     // Loader displayed while the position is not yet fetched
@@ -49,7 +54,7 @@ function ISS_Position(props) {
                     <Popup>🛰️ ISS is here!</Popup>
                 </Marker>
             </MapContainer>
-            <p className="text-center">ISS last considered position</p>
+            <p className="text-center">ISS position</p>
         </div>
     )
 }

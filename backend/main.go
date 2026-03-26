@@ -2,20 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
-	"github.com/00David/ISSue/backend/handlers"
-	"github.com/joho/godotenv" // for loading environment variables from the parent folder
+	"github.com/00David/ISSue/backend/services"
+	"github.com/joho/godotenv"
 )
 
 // main.go
 func main() {
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Println("Warning: .env file not found, using defaults")
-	}
+	godotenv.Load() // loads local .env file if present
 
 	port := os.Getenv("BACKEND_PORT")
 	if port == "" {
@@ -29,7 +25,11 @@ func main() {
 	addr := host + ":" + port
 
 	// Resquest handlers
-	http.HandleFunc("/api/iss", handlers.ISSHandler)
+
+	// Services
+	http.HandleFunc("/api/get-iss-current-position", services.ISSHandler)
+
+	// Ressources
 
 	fmt.Println("Server started on http://" + addr + " ✅")
 	http.ListenAndServe(addr, nil)

@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import '../../css/Home.css'
 
 import Banner from './Banner.jsx'
-import ISS_Position from './ISS_Position.jsx'
+import ISSPosition from './ISSPosition.jsx'
 import Quiz from './Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
@@ -32,7 +32,7 @@ function Home(props) {
             </div>
             <div id="Home-center-display">
                 <Banner />
-                <ISS_Position />
+                <ISSPosition />
                 <Quiz />
             </div>
             <div id="Home-right-display">
