@@ -131,7 +131,7 @@ func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		// Creation of the Quiz in DB
 		id, err := CreateQuiz(db, r.Context(), req.Date, req.Questions, req.Country, req.Region, req.Ocean)
 		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -160,7 +160,7 @@ func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				http.Error(w, "No Quiz for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -175,7 +175,7 @@ func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				http.Error(w, "No Quiz for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

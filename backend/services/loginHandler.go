@@ -7,6 +7,7 @@ import (
 
 	"github.com/00David/ISSue/backend/ressources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Login structure sent by the client
@@ -42,14 +43,18 @@ func LoginHandler(db *mongo.Database) http.HandlerFunc {
 				http.Error(w, "User not found", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		sessionID := "0" // TODO
 
 		// Password check
-		if user.Password == req.Password {
+		err = bcrypt.CompareHashAndPassword(
+			[]byte(user.Password),
+			[]byte(req.Password),
+		)
+		if err != nil {
 			http.SetCookie(w, &http.Cookie{
 				Name:     "session_id",
 				Value:    sessionID,
@@ -63,7 +68,6 @@ func LoginHandler(db *mongo.Database) http.HandlerFunc {
 			json.NewEncoder(w).Encode(map[string]string{
 				"message": "signup successful",
 			})
-
 		} else {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return

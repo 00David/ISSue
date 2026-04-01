@@ -171,7 +171,7 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		// Creation of the User in DB
 		id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password)
 		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -200,7 +200,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				http.Error(w, "No User for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -215,7 +215,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				http.Error(w, "No User for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -243,7 +243,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 					http.Error(w, "No User for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -255,7 +255,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 					http.Error(w, "No User for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -267,7 +267,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 					http.Error(w, "No User for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -279,7 +279,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 					http.Error(w, "No User for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}

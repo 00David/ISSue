@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-// Open Notify (ISS) API response structure
+// OpenNotify (ISS) API response structure
 type ISSRawPosition struct {
 	Message     string `json:"message"`
 	Timestamp   int64  `json:"timestamp"`
@@ -35,7 +35,7 @@ func CurrentISSHandler(db *mongo.Database) http.HandlerFunc {
 		// Calls Open Notify API
 		resp, err := http.Get("http://api.open-notify.org/iss-now.json")
 		if err != nil {
-			http.Error(w, "Error ISS API", http.StatusBadGateway)
+			http.Error(w, "Error ISS API : "+err.Error(), http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()

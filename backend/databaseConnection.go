@@ -12,7 +12,7 @@ import (
 )
 
 // Connects the backend to the MongoDB Atlas database
-func connect_db(password string) *mongo.Database {
+func connect_db(password string) (*mongo.Client, *mongo.Database) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI("mongodb+srv://david_db_user:" + password + "@issue-cluster.jgi7pm2.mongodb.net/?appName=ISSue-cluster").SetServerAPIOptions(serverAPI)
 
@@ -21,12 +21,6 @@ func connect_db(password string) *mongo.Database {
 		log.Println("❌ ERROR : Impossible to connect to MongoDB.\nDetails : ", err)
 		os.Exit(1)
 	}
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			log.Println("⚠️ Disconnection error.\nDetails : ", err)
-			os.Exit(1)
-		}
-	}()
 
 	// Send a ping to confirm a successful connection
 	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
@@ -34,5 +28,5 @@ func connect_db(password string) *mongo.Database {
 		os.Exit(1)
 	}
 	fmt.Println("Connected to MongoDB database ✅")
-	return client.Database("issue")
+	return client, client.Database("issue")
 }

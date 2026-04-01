@@ -62,7 +62,7 @@ type User struct {
 	IdUser           int32   `json:"idUser" bson:"idUser"`                     // user id, unique for every user
 	Username         string  `json:"username" bson:"username"`                 // username, unique for every user
 	Email            string  `json:"email" bson:"email"`                       // user email, in case of password reseting, unique for every user
-	Password         string  `json:"password" bson:"password"`                 // user password, maybe byte[] later ?
+	Password         string  `json:"password" bson:"password"`                 // user HASHED password
 	RespondedQuizzes []int32 `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user responded "Quiz"
 }
 

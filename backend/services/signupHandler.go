@@ -7,6 +7,7 @@ import (
 
 	"github.com/00David/ISSue/backend/ressources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Signup structure sent by the client
@@ -50,10 +51,20 @@ func SignupHandler(db *mongo.Database) http.HandlerFunc {
 			return
 		}
 
-		// The new user is created in the DB
-		_, err = ressources.CreateUser(db, r.Context(), req.Username, req.Email, req.Password)
+		// The password is hashed, we're profesional here
+		hashedPassword, err := bcrypt.GenerateFromPassword(
+			[]byte(req.Password),
+			bcrypt.DefaultCost,
+		)
 		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Error hashing password", http.StatusInternalServerError)
+			return
+		}
+
+		// The new user is created in the DB
+		_, err = ressources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

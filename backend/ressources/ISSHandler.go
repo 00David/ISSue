@@ -135,7 +135,7 @@ func handlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Reque
 				http.Error(w, "No ISS Position", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -155,7 +155,7 @@ func handlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Reque
 		// Creation of the ISS position in DB
 		date, err := CreateISSPosition(db, r.Context(), req.Timestamp, req.Latitude, req.Longitude)
 		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -184,7 +184,7 @@ func handlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request,
 				http.Error(w, "No ISS Position for this date", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -199,7 +199,7 @@ func handlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request,
 				http.Error(w, "No ISS Position for this date", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

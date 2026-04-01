@@ -130,7 +130,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 		// Creation of the QuizResponses in DB
 		id, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, req.Note, req.Comment)
 		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -159,7 +159,7 @@ func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *ht
 				http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -174,7 +174,7 @@ func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *ht
 				http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "Internal error", http.StatusInternalServerError)
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -202,7 +202,7 @@ func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *ht
 					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -214,7 +214,7 @@ func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *ht
 					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "Internal error", http.StatusInternalServerError)
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
