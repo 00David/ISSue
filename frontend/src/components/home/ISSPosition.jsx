@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Spinner } from 'react-bootstrap';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 
@@ -35,10 +36,10 @@ function ISS_Position(props) {
     if (loading || !ISSPosition) {
         return (
             <div id="Home-iss-position-display">
-                <div style={{ textAlign: 'center' }}>
-                    <div className="spinner"></div>
-                    <p className="text-center">🛰️ Tracking ISS position...</p>
-                </div>
+                <Spinner animation="border" role="status" variant="secondary">
+                    <span className="visually-hidden">Loading ...</span>
+                </Spinner>
+                <p className="text-center">🛰️ Tracking ISS position...</p>  
             </div>
         );
     }

@@ -32,7 +32,7 @@ type GeminiQuizResponse struct {
 type GeminiQuestion struct {
 	Question      string   `json:"question"`
 	Options       []string `json:"options"`
-	IndexResponse int32    `json:"indexResponse"`
+	IndexResponse int64    `json:"indexResponse"`
 }
 
 // "/api/fetch-quiz" handler
@@ -206,7 +206,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		questions := make([]ressources.Question, len(geminiQuiz.Questions))
 		for i, q := range geminiQuiz.Questions {
 			questions[i] = ressources.Question{
-				NumQuestion:   int32(i),
+				NumQuestion:   int64(i),
 				Question:      q.Question,
 				Options:       q.Options,
 				IndexResponse: q.IndexResponse,

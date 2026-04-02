@@ -20,7 +20,7 @@ import (
 var collectionNameQuiz = "quizzes"
 
 // Returns a Quiz in DB for a given id
-func GetQuiz(db *mongo.Database, ctx context.Context, id int32) (Quiz, error) {
+func GetQuiz(db *mongo.Database, ctx context.Context, id int64) (Quiz, error) {
 	collection := db.Collection(collectionNameQuiz)
 
 	filter := bson.D{{Key: "IdQuiz", Value: id}}
@@ -50,7 +50,7 @@ func GetQuizWithDate(db *mongo.Database, ctx context.Context, date time.Time) (Q
 
 // Creates a Quiz in DB, returns its new id
 func CreateQuiz(db *mongo.Database, ctx context.Context,
-	date time.Time, questions []Question, country string, region string, ocean bool) (int32, error) {
+	date time.Time, questions []Question, country string, region string, ocean bool) (int64, error) {
 	collection := db.Collection(collectionNameQuiz)
 
 	// We don't create a new Quiz when there is already one existing for the same date
@@ -77,7 +77,7 @@ func CreateQuiz(db *mongo.Database, ctx context.Context,
 }
 
 // Deletes a Quiz in DB for a given id
-func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
+func DeleteQuiz(db *mongo.Database, ctx context.Context, id int64) error {
 	collection := db.Collection(collectionNameQuiz)
 
 	filter := bson.D{{Key: "IdQuiz", Value: id}}
@@ -89,26 +89,36 @@ func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/quizzes[/id]" handler
+// "/api/quizzes[/param]" handler. param can be a quiz id or a date.
 func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// gets the potential id parameter
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/quizzes/")
+		// gets the potential parameter
+		paramStr := strings.TrimPrefix(r.URL.Path, "/api/quizzes/")
 
-		if idStr == "" {
+		if paramStr == "" {
 			fmt.Println("Request received on '/api/quizzes'")
 			quizHandlerWithoutId(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/quizzes/id'")
-			// Checks that the parameter is an integer
-			id64, err := strconv.ParseInt(idStr, 10, 32)
+			fmt.Println("Request received on '/api/quizzes/param'")
+
+			// Checks if the parameter is an integer
+			id, err := strconv.ParseInt(paramStr, 10, 32)
+			if err == nil {
+				quizHandlerWithId(db, w, r, id)
+			}
+
+			// Checks if the parameter is a date
+			date, err := time.Parse(time.RFC3339, paramStr)
+			if err == nil {
+				quizHandlerWithDate(db, w, r, date)
+			}
+
 			if err != nil {
-				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
+				http.Error(w, "Invalid parameter format, must be an integer or a date", http.StatusBadRequest)
 				return
 			}
-			id := int32(id64)
-			quizHandlerWithId(db, w, r, id)
+
 		}
 
 	}
@@ -148,8 +158,32 @@ func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 	}
 }
 
+// "/api/quizzes/date" handler
+func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
+	switch r.Method {
+	case http.MethodGet: // GET
+
+		// Getting the Quiz with this date in DB
+		quiz, err := GetQuizWithDate(db, r.Context(), date)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No Quiz for this date", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quiz)
+
+	default:
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
 // "/api/quizzes/id" handler
-func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
+func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int64) {
 	switch r.Method {
 	case http.MethodGet: // GET
 

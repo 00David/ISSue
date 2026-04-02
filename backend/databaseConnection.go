@@ -12,9 +12,15 @@ import (
 )
 
 // Connects the backend to the MongoDB Atlas database
-func connect_db(password string) (*mongo.Client, *mongo.Database) {
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI("mongodb+srv://david_db_user:" + password + "@issue-cluster.jgi7pm2.mongodb.net/?appName=ISSue-cluster").SetServerAPIOptions(serverAPI)
+func connect_db(password string, local_db bool) (*mongo.Client, *mongo.Database) {
+
+	var opts *options.ClientOptions
+	if local_db {
+		opts = options.Client().ApplyURI("mongodb://localhost:27017")
+	} else {
+		serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+		opts = options.Client().ApplyURI("mongodb+srv://david_db_user:" + password + "@issue-cluster.jgi7pm2.mongodb.net/?appName=ISSue-cluster").SetServerAPIOptions(serverAPI)
+	}
 
 	client, err := mongo.Connect(opts)
 	if err != nil {

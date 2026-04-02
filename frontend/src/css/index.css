@@ -14,7 +14,7 @@ body {
     font-family: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     color: #1a1a2e;
-    background: linear-gradient(135deg, #0a1128 0%, #1a1a2e 100%);
+    background: linear-gradient(180deg, #000814 0%, #2a2a4e 100%);
     min-height: 100vh;
 }
 

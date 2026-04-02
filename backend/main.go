@@ -31,8 +31,13 @@ func main() {
 
 	gemini_key := os.Getenv("GEMINI_API_KEY")
 
+	local_db := false
+	if len(os.Args) == 2 && os.Args[1] == "local" {
+		local_db = true
+	}
+
 	// Database connection
-	client, db := connect_db(db_password)
+	client, db := connect_db(db_password, local_db)
 	defer func() {
 		if err := client.Disconnect(context.Background()); err != nil {
 			log.Println("⚠️ Disconnection error.\nDetails : ", err)

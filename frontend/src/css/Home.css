@@ -41,26 +41,31 @@
 }
 
 #Home-iss-position-display {
-    display: 'flex';
-    justify-content: 'center';
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    justify-content: center;
     align-self: center;
     align-items: center;
     width: 50%;
     min-height: 400px;
 }
 
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 6px solid rgba(74, 123, 167, 0.2);
-    border-top-color: #4a7ba7;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-}
+/* ===== QUIZ ===== */
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+#Home-quiz-display {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    justify-content: center;
+    align-self: center;
+    align-items: center;
+    width: 50%;
+    /*border: 2px solid #4a7ba7;*/
+    border-radius: 10px;
+    margin-bottom: 40px;
+    padding: 20px;
+    background-color: #202240;
 }
 
 /* Responsive : on little screen, only one column */
