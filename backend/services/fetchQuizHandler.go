@@ -47,8 +47,9 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		}
 
 		// Gets the ISSPosition in database for the current day
-		// if there is no ISSPosition, it is created into the database
+		// if there is no ISSPosition, it creates a new ISSPosition, later inserted into the database if the quiz is successfully created
 		issPosition, err := ressources.GetISSPosition(db, r.Context(), time.Now())
+		newISSPosition := false
 		if err != nil && err == mongo.ErrNoDocuments {
 
 			// Calls Open Notify API
@@ -71,18 +72,14 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 				return
 			}
 
-			// inserts the new ISSPosition into DB
+			// creates the new ISSPosition, inserted into DB after successfully creating the quiz
 			issPosition = ressources.ISSPosition{
 				Date:      time.Unix(raw.Timestamp, 0),
 				Timestamp: raw.Timestamp,
 				Latitude:  raw.ISSPosition.Latitude,
 				Longitude: raw.ISSPosition.Longitude,
 			}
-			_, err = ressources.CreateISSPosition(db, r.Context(), issPosition.Timestamp, issPosition.Latitude, issPosition.Longitude)
-			if err != nil {
-				http.Error(w, "New ISSPosition insertion failure : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
+			newISSPosition = true
 		}
 
 		// Calls BigDataCloud API for reverse geocoding the ISS position
@@ -181,7 +178,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		// Generate content
 		genResp, err := client.Models.GenerateContent(
 			ctx,
-			"gemini-3-flash-preview",
+			"gemini-2.5-flash",
 			genai.Text(prompt),
 			config,
 		)
@@ -206,10 +203,10 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		questions := make([]ressources.Question, len(geminiQuiz.Questions))
 		for i, q := range geminiQuiz.Questions {
 			questions[i] = ressources.Question{
-				NumQuestion:   int64(i),
+				NumQuestion:   int32(i),
 				Question:      q.Question,
 				Options:       q.Options,
-				IndexResponse: q.IndexResponse,
+				IndexResponse: int32(q.IndexResponse),
 			}
 		}
 
@@ -219,6 +216,15 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "New Quiz insertion failure : "+err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		// Insertion of the new ISSPosition into our database
+		if newISSPosition {
+			_, err = ressources.CreateISSPosition(db, r.Context(), issPosition.Timestamp, issPosition.Latitude, issPosition.Longitude)
+			if err != nil {
+				http.Error(w, "New ISSPosition insertion failure : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

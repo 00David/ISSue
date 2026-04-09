@@ -19,7 +19,7 @@ import (
 var collectionNameQuizR = "quizresponses"
 
 // Returns a QuizResponses in DB for a given id
-func GetQuizResponses(db *mongo.Database, ctx context.Context, id int64) (QuizResponses, error) {
+func GetQuizResponses(db *mongo.Database, ctx context.Context, id int32) (QuizResponses, error) {
 	collection := db.Collection(collectionNameQuizR)
 
 	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
@@ -30,10 +30,10 @@ func GetQuizResponses(db *mongo.Database, ctx context.Context, id int64) (QuizRe
 
 // Creates a QuizResponses in DB, returns its new id
 func CreateQuizResponses(db *mongo.Database, ctx context.Context,
-	idQuiz int64, idUser int64, responses []Response, note int64, comment string) (int64, error) {
+	idQuiz int32, idUser int32, responses []Response, note int32, comment string) (int32, error) {
 	collection := db.Collection(collectionNameQuizR)
 
-	id, err := createUniqueId(collection, ctx, "IdQuizResponses")
+	id, err := createUniqueId(collection, ctx, "idQuizResponses")
 	if err != nil {
 		return -1, err
 	}
@@ -51,7 +51,7 @@ func CreateQuizResponses(db *mongo.Database, ctx context.Context,
 
 // Updates a QuizResponses note in DB for a given id
 func UpdateQuizResponsesNote(db *mongo.Database, ctx context.Context,
-	id int64, newNote int64) error {
+	id int32, newNote int32) error {
 	collection := db.Collection(collectionNameQuizR)
 
 	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
@@ -64,7 +64,7 @@ func UpdateQuizResponsesNote(db *mongo.Database, ctx context.Context,
 
 // Updates a QuizResponses comment in DB for a given id
 func UpdateQuizResponsesComment(db *mongo.Database, ctx context.Context,
-	id int64, newComment string) error {
+	id int32, newComment string) error {
 	collection := db.Collection(collectionNameQuizR)
 
 	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
@@ -76,7 +76,7 @@ func UpdateQuizResponsesComment(db *mongo.Database, ctx context.Context,
 }
 
 // Deletes a QuizResponses in DB for a given id
-func DeleteQuizResponses(db *mongo.Database, ctx context.Context, id int64) error {
+func DeleteQuizResponses(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameQuizR)
 
 	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
@@ -101,12 +101,12 @@ func QuizResponsesHandler(db *mongo.Database) http.HandlerFunc {
 		} else {
 			fmt.Println("Request received on '/api/quiz-responses/id'")
 			// Checks that the parameter is an integer
-			id, err := strconv.ParseInt(idStr, 10, 32)
+			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
 				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
 				return
 			}
-			quizResponsesHandlerWithId(db, w, r, id)
+			quizResponsesHandlerWithId(db, w, r, int32(id64))
 		}
 
 	}
@@ -147,7 +147,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 }
 
 // "/api/quiz-responses/id" handler
-func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int64) {
+func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET
 

@@ -19,7 +19,7 @@ import (
 var collectionNameUsers = "users"
 
 // Returns a User in DB for a given id
-func GetUser(db *mongo.Database, ctx context.Context, id int64) (User, error) {
+func GetUser(db *mongo.Database, ctx context.Context, id int32) (User, error) {
 	collection := db.Collection(collectionNameUsers)
 
 	filter := bson.D{{Key: "IdUser", Value: id}}
@@ -49,10 +49,10 @@ func GetUserWithInfo(db *mongo.Database, ctx context.Context,
 
 // Creates a User in DB, returns its new id
 func CreateUser(db *mongo.Database, ctx context.Context,
-	username string, email string, password string) (int64, error) {
+	username string, email string, password string) (int32, error) {
 	collection := db.Collection(collectionNameUsers)
 
-	id, err := createUniqueId(collection, ctx, "IdUser")
+	id, err := createUniqueId(collection, ctx, "idUser")
 	if err != nil {
 		return -1, err
 	}
@@ -61,7 +61,7 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 		Username:         username,
 		Email:            email,
 		Password:         password,
-		RespondedQuizzes: make([]int64, 0),
+		RespondedQuizzes: make([]int32, 0),
 	}
 	_, err = collection.InsertOne(ctx, user)
 	return id, err
@@ -69,7 +69,7 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 
 // Updates a User string information (Username, or Email, or Password)
 func UpdateUserInfo(db *mongo.Database, ctx context.Context,
-	id int64, fieldToModify string, newFieldValue string) error {
+	id int32, fieldToModify string, newFieldValue string) error {
 	collection := db.Collection(collectionNameQuizR)
 
 	validFields := map[string]bool{
@@ -105,7 +105,7 @@ func UpdateUserInfo(db *mongo.Database, ctx context.Context,
 
 // Updates a User responded quizzes indexes
 func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
-	id int64, newRespondedQuizzes []int64) error {
+	id int32, newRespondedQuizzes []int32) error {
 	collection := db.Collection(collectionNameQuizR)
 
 	filter := bson.D{{Key: "IdUser", Value: id}}
@@ -117,7 +117,7 @@ func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
 }
 
 // Deletes a User in DB for a given id
-func DeleteUser(db *mongo.Database, ctx context.Context, id int64) error {
+func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameUsers)
 
 	filter := bson.D{{Key: "IdUser", Value: id}}
@@ -142,12 +142,12 @@ func UsersHandler(db *mongo.Database) http.HandlerFunc {
 		} else {
 			fmt.Println("Request received on '/api/users/id'")
 			// Checks that the parameter is an integer
-			id, err := strconv.ParseInt(idStr, 10, 32)
+			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
 				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
 				return
 			}
-			userHandlerWithId(db, w, r, id)
+			userHandlerWithId(db, w, r, int32(id64))
 		}
 
 	}
@@ -188,7 +188,7 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 }
 
 // "/api/users/id" handler
-func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int64) {
+func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET
 

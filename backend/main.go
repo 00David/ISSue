@@ -52,9 +52,13 @@ func main() {
 	http.HandleFunc("/api/fetch-quiz", services.FetchQuizHandler(db, gemini_key))
 	// Ressources
 	http.HandleFunc("/api/iss", ressources.ISSHandler(db))
+	http.HandleFunc("/api/iss/", ressources.ISSHandler(db))
 	http.HandleFunc("/api/quizzes", ressources.QuizHandler(db))
+	http.HandleFunc("/api/quizzes/", ressources.QuizHandler(db))
 	http.HandleFunc("/api/quiz-responses", ressources.QuizResponsesHandler(db))
+	http.HandleFunc("/api/quiz-responses/", ressources.QuizResponsesHandler(db))
 	http.HandleFunc("/api/users", ressources.UsersHandler(db))
+	http.HandleFunc("/api/users/", ressources.UsersHandler(db))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
 	http.ListenAndServe(addr, nil)
