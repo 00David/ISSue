@@ -68,8 +68,8 @@ button {
 }
 
 button:hover {
-    background: #3a5f8f;
-    transform: translateY(-2px);
+    background: #304d73;
+    transform: translateY(2px);
     box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3);
 }
 

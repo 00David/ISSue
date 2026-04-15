@@ -1,13 +1,38 @@
 import { useEffect, useState } from 'react';
+import { Button, Spinner } from 'react-bootstrap';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import ReactCountryFlag from "react-country-flag";
 import axios from 'axios';
 
+import Question from './Question.jsx'
+
 function Quiz(props) {
+    
     const [quiz, setQuiz] = useState(null);
+    const [selected, setSelected] = useState([]); // for each case (= a question) : -1 if no selection, 0 if wrongly selected, 1 if correctly selected
     const [loading, setLoading] = useState(true);
-    const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [score, setScore] = useState(0);
     const [showResults, setShowResults] = useState(false);
+
+    function nbSelected(){
+        return selected.reduce((acc, select) => (select != -1) ? acc+1 : acc, 0); 
+    }
+
+    function validate(){
+        const isEverythingSelected = selected.reduce((acc, select) => acc && (select != -1), true);
+
+        if (isEverythingSelected){
+            setShowResults(true);
+            const totalScore = selected.reduce((acc, score) => acc + score, 0); // each score can be only 0 or 1
+        } else{
+            alert("Need to select everything");
+        }
+    }
+
+    function setArraySelected(index, newSelected){
+        setSelected(
+            selected.map((existingSelection, i) => i === index ? newSelected : existingSelection)
+        );
+    }
 
     useEffect(() => {
         const fetchTodayQuiz = async () => {
@@ -15,6 +40,7 @@ function Quiz(props) {
                 const todayDate = new Date().toISOString();
                 const response = await axios.get('/api/quizzes/'+encodeURIComponent(todayDate));
                 setQuiz(response.data);
+                setSelected(Array(response.data.questions.length).fill(-1));
                 setLoading(false);
             } catch (error) {
                 console.error("Error while fetching today quiz:\n", error);
@@ -24,64 +50,53 @@ function Quiz(props) {
     }, []);
 
     if (loading) {
-        return <div id="Home-quiz-display">Quiz loading...</div>;
+        return <div id="Home-quiz-display">
+                    <Spinner animation="border" role="status" variant="secondary">
+                        <span className="visually-hidden">Quiz loading ...</span>
+                    </Spinner>
+                    <p className="text-center">Quiz loading...</p>  
+                </div>
     }
 
     if (!quiz) {
-        return <div id="Home-quiz-display">No quiz available.</div>;
+        return <div id="Home-quiz-display">No quiz available 🌧️.</div>;
     }
 
-    if (showResults) {
-        return (
-            <div id="Home-quiz-display">
-                <h2>Results</h2>
-                <p>Score: {score}/{quiz.questions.length}</p>
-                <p>Country/Ocean: {quiz.country}</p>
-                {quiz.region && <p>Region: {quiz.region}</p>}
-            </div>
-        );
-    }
-
-    const question = quiz.questions[currentQuestion];
-
+    const quizDate = new Date(quiz.date);
+    const formattedQuizDate =
+        String(quizDate.getDate()).padStart(2, "0") + "/" +
+        String(quizDate.getMonth() + 1).padStart(2, "0") + "/" +
+        quizDate.getFullYear();
     return (
         <div id="Home-quiz-display">
-            <div className="quiz-header">
-                <h2>Quiz - {quiz.ocean ? 'Ocean' : 'Country'}: {quiz.country}</h2>
-                {quiz.region && <p>Region: {quiz.region}</p>}
-                <p>Question {currentQuestion + 1}/{quiz.questions.length}</p>
+            <div id="Home-quiz-progress">
+                <ProgressBar now={nbSelected()*10} />
             </div>
-
-            <div className="quiz-question">
-                <h3>{question.question}</h3>
-                <div className="quiz-options">
-                    {question.options.map((option, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleAnswerClick(index)}
-                            className={selectedAnswer === index ? 'selected' : ''}
-                            disabled={selectedAnswer !== null}
-                        >
-                            {option}
-                        </button>
-                    ))}
-                </div>
+            <div id="Home-quiz-header">
+                <h3 className="text-center">{formattedQuizDate} quiz is about ...</h3>
+                <ReactCountryFlag 
+                    countryCode={quiz.countryCode}
+                    style={{
+                        width: '30%',
+                        height: '30%',
+                    }}
+                    title="US" svg  />
+                <h2 className="text-center">{quiz.country} !</h2>
+                {quiz.region && <h3 className="text-center">and its "{quiz.region}" region !</h3>} 
             </div>
-
-            {selectedAnswer !== null && (
-                <div className="quiz-feedback">
-                    {selectedAnswer === question.indexResponse ? (
-                        <p className="correct">✅ Correct response !</p>
-                    ) : (
-                        <p className="incorrect">
-                            ❌ Incorrect response. The correct response was : {question.options[question.indexResponse]}
-                        </p>
-                    )}
-                    <button onClick={handleNextQuestion}>
-                        {currentQuestion < quiz.questions.length - 1 ? 'Next question' : 'See results'}
-                    </button>
-                </div>
-            )}
+            <div id="Home-quiz-questions">
+                    {quiz.questions.map((question, index) => {
+                         return (
+                            <Question key={index} question={question} showResult={showResults} 
+                            setSelected={ (selected) => setArraySelected(index, selected)} />
+                         );
+                    })}
+            </div>
+            <button 
+                onClick={ () => validate()}
+                disabled={showResults}>
+                Validate
+            </button>
         </div>
     );
 }

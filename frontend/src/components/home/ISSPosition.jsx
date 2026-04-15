@@ -25,6 +25,7 @@ function ISS_Position(props) {
         };
         fetchISSPosition(true);
 
+        // ISS position fetched every 5 seconds
         const interval = setInterval(() => {
             fetchISSPosition(false);
         }, 5000)

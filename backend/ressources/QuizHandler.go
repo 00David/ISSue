@@ -50,7 +50,7 @@ func GetQuizWithDate(db *mongo.Database, ctx context.Context, date time.Time) (Q
 
 // Creates a Quiz in DB, returns its new id
 func CreateQuiz(db *mongo.Database, ctx context.Context,
-	date time.Time, questions []Question, country string, region string, ocean bool) (int32, error) {
+	date time.Time, questions []Question, country string, countryCode string, region string, ocean bool) (int32, error) {
 	collection := db.Collection(collectionNameQuiz)
 
 	// We don't create a new Quiz when there is already one existing for the same date
@@ -65,12 +65,13 @@ func CreateQuiz(db *mongo.Database, ctx context.Context,
 	}
 
 	quiz := Quiz{
-		IdQuiz:    id,
-		Date:      date,
-		Questions: questions,
-		Country:   country,
-		Region:    region,
-		Ocean:     ocean,
+		IdQuiz:      id,
+		Date:        date,
+		Questions:   questions,
+		Country:     country,
+		CountryCode: countryCode,
+		Region:      region,
+		Ocean:       ocean,
 	}
 	_, err = collection.InsertOne(ctx, quiz)
 	return id, err
@@ -139,7 +140,7 @@ func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		defer r.Body.Close()
 
 		// Creation of the Quiz in DB
-		id, err := CreateQuiz(db, r.Context(), req.Date, req.Questions, req.Country, req.Region, req.Ocean)
+		id, err := CreateQuiz(db, r.Context(), req.Date, req.Questions, req.Country, req.Region, req.CountryCode, req.Ocean)
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return

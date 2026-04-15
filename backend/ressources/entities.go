@@ -24,12 +24,13 @@ type ISSPosition struct {
 
 // A quiz
 type Quiz struct {
-	IdQuiz    int32      `json:"idQuiz" bson:"idQuiz"`       // quiz id, unique for every quiz
-	Date      time.Time  `json:"date" bson:"date"`           // quiz date. (day-month-year unique for every Quiz)
-	Questions []Question `json:"questions" bson:"questions"` // quiz questions
-	Country   string     `json:"country" bson:"country"`     // the main topic of the quiz
-	Region    string     `json:"region" bson:"region"`       // the secondary topic of the quiz
-	Ocean     bool       `json:"ocean" bson:"ocean"`         // indicates if an ocean is targeted
+	IdQuiz      int32      `json:"idQuiz" bson:"idQuiz"`           // quiz id, unique for every quiz
+	Date        time.Time  `json:"date" bson:"date"`               // quiz date. (day-month-year unique for every Quiz)
+	Questions   []Question `json:"questions" bson:"questions"`     // quiz questions
+	Country     string     `json:"country" bson:"country"`         // the main topic of the quiz
+	CountryCode string     `json:"countryCode" bson:"countryCode"` // the country code, ISO alpha-2 format
+	Region      string     `json:"region" bson:"region"`           // the secondary topic of the quiz
+	Ocean       bool       `json:"ocean" bson:"ocean"`             // indicates if an ocean is targeted
 }
 
 // A quiz question

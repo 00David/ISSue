@@ -24,10 +24,11 @@ type ReverseGeocoding struct {
 
 // Gemini response structure
 type GeminiQuizResponse struct {
-	Questions []GeminiQuestion `json:"questions"`
-	Country   string           `json:"country"`
-	Region    string           `json:"region"`
-	Ocean     bool             `json:"ocean"`
+	Questions   []GeminiQuestion `json:"questions"`
+	Country     string           `json:"country"`
+	CountryCode string           `json:"countryCode"`
+	Region      string           `json:"region"`
+	Ocean       bool             `json:"ocean"`
 }
 type GeminiQuestion struct {
 	Question      string   `json:"question"`
@@ -118,12 +119,16 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 			- Generate EXACTLY 10 questions about this geographic location
 			- Each question must be related to the location's geography, culture, history, or notable features
 			- Questions must be general knowledge (max 200 characters each)
+			- Ensure strong topic diversity across all 10 questions
+			- Do not generate more than 2 questions about the exact same topic, fact, or idea
+			- Avoid repeating the same idea or rephrasing similar questions
 			- Each question has EXACTLY 4 options (max 80 characters each)
 			- Only ONE option is correct per question
 			- Provide the index (0-3) of the correct answer
 
 			For the metadata:
 			- "country": Use ISO standard country name (e.g., "France", "United States", "Japan"). If ocean, use the ocean name (e.g., "Pacific Ocean")
+			- "countryCode": "Must be ISO 3166-1 alpha-2 code (exactly 2 uppercase letters). Examples: France → FR, United States → US, Japan → JP. If ocean, use full name, exactly as "country" metadata"
 			- "region": The principal subdivision/region name. If ocean, use "" (empty string)
 			- "ocean": true if the location is in an ocean, false otherwise
 
@@ -161,6 +166,10 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 					"country": map[string]any{
 						"type":        "string",
 						"description": "ISO standard country name or ocean name",
+					},
+					"countryCode": map[string]any{
+						"type":        "string",
+						"description": "Must be ISO 3166-1 alpha-2 code (exactly 2 uppercase letters), or ocean name",
 					},
 					"region": map[string]any{
 						"type":        "string",
@@ -212,7 +221,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 
 		// Insertion of the quiz into our database
 		_, err = ressources.CreateQuiz(db, r.Context(),
-			issPosition.Date, questions, geminiQuiz.Country, geminiQuiz.Region, geminiQuiz.Ocean)
+			issPosition.Date, questions, geminiQuiz.Country, geminiQuiz.CountryCode, geminiQuiz.Region, geminiQuiz.Ocean)
 		if err != nil {
 			http.Error(w, "New Quiz insertion failure : "+err.Error(), http.StatusInternalServerError)
 			return
