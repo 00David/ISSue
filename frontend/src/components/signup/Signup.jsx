@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-function Signup(props) {
+function Signup() {
 
         useEffect(() => {
         document.title = "ISSue - Sign up";

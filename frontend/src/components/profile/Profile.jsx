@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import NotFound from '../notfound/NotFound.jsx'
 
-function Profile(props) {
+function Profile() {
 
     // The id of the profile is got from URL
     let { idProfile } = useParams();

@@ -8,22 +8,19 @@ import ISSPosition from './ISSPosition.jsx'
 import Quiz from './Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
-function Home(props) {
-
-    // The id of the quiz is got from URL, if provided
-    let { idQuiz } = useParams();
+function Home() {
 
     // State for handling an access to a non existant quiz
     const [notFound, setNotFound] = useState(false);
 
-    useEffect(() => {
+    /*useEffect(() => {
         document.title = "ISSue - Home";
         setNotFound(false);
     }, [notFound]);
 
     if (notFound) {
 		return <NotFound/>
-  	}
+  	}*/
 
     return (
         <div id="Home-display">

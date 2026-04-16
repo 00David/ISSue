@@ -1,7 +1,6 @@
-import { use, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Spinner } from 'react-bootstrap';
 import ReactCountryFlag from "react-country-flag";
-import axios from 'axios';
 
 function Question({question, showResult, setSelected}) {
 

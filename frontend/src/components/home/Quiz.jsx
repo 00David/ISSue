@@ -6,7 +6,7 @@ import axios from 'axios';
 
 import Question from './Question.jsx'
 
-function Quiz(props) {
+function Quiz() {
     
     const [quiz, setQuiz] = useState(null);
     const [selected, setSelected] = useState([]); // for each case (= a question) : -1 if no selection, 0 if wrongly selected, 1 if correctly selected
@@ -74,13 +74,13 @@ function Quiz(props) {
             </div>
             <div id="Home-quiz-header">
                 <h3 className="text-center">{formattedQuizDate} quiz is about ...</h3>
-                <ReactCountryFlag 
+                {!quiz.ocean && <ReactCountryFlag 
                     countryCode={quiz.countryCode}
                     style={{
                         width: '30%',
                         height: '30%',
                     }}
-                    title="US" svg  />
+                    title="US" svg  />}
                 <h2 className="text-center">{quiz.country} !</h2>
                 {quiz.region && <h3 className="text-center">and its "{quiz.region}" region !</h3>} 
             </div>

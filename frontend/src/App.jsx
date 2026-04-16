@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router";
+import { useState } from 'react';
 
 import Home from './components/home/Home.jsx'
 import Login from './components/login/Login.jsx'
@@ -7,6 +8,8 @@ import Profile from './components/profile/Profile.jsx'
 import NotFound from './components/notfound/NotFound.jsx';
 
 function App() {
+
+	const [connected, setConnected] = useState();
 
 	return (
 		<BrowserRouter>

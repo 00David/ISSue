@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Spinner } from 'react-bootstrap';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 
-function ISS_Position(props) {
+function ISS_Position() {
     const [ISSPosition,setISSPosition] = useState([0, 0]); // [latitude, longitude]
     const [loading, setLoading] = useState(true);
 

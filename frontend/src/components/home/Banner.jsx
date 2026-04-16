@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-function Banner(props) {
+function Banner() {
     const navigate = useNavigate();
 
     const handleClick = () => {
