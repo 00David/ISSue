@@ -108,23 +108,27 @@ func ISSHandler(db *mongo.Database) http.HandlerFunc {
 
 		if dateStr == "" {
 			fmt.Println("Request received on '/api/iss'")
-			handlerWithoutDate(db, w, r)
+			ISShandlerWithoutDate(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/iss/dd-mm-yyyy'")
-			// Checks that the parameter has the right date format
-			formattedDateStr, err := time.Parse("02-01-2006", dateStr)
+			fmt.Println("Request received on '/api/iss/date'")
+
+			// Checks if the parameter is a date
+			date, err := time.Parse(time.RFC3339, dateStr)
+			if err == nil {
+				ISShandlerWithDate(db, w, r, date)
+			}
+
 			if err != nil {
-				http.Error(w, "Invalid date parameter format", http.StatusBadRequest)
+				http.Error(w, "Invalid parameter format, must be a date", http.StatusBadRequest)
 				return
 			}
-			handlerWithDate(db, w, r, formattedDateStr)
 		}
 
 	}
 }
 
 // "/api/iss" handler
-func handlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
+func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet: // GET
 
@@ -173,7 +177,7 @@ func handlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Reque
 }
 
 // "/api/iss/dd-mm-yyyy" handler
-func handlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
+func ISShandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
 	switch r.Method {
 	case http.MethodGet: // GET
 

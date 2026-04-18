@@ -1,31 +1,36 @@
-/* ===== RESET & BASE ===== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+@import "tailwindcss";
 
 html {
-    font-size: 16px;
     scroll-behavior: smooth;
 }
 
 body {
     font-family: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    line-height: 1.6;
-    color: #1a1a2e;
-    background: linear-gradient(180deg, #000814 0%, #2a2a4e 100%);
+    background-color: #0a1128;
+    color: white;
     min-height: 100vh;
 }
 
-/* ===== TYPOGRAPHY ===== */
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 500;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    color: #ffffff;
+/* ===== SPINNER ===== */
+.spinner {
+    width: 2rem;            /* w-8 */
+    height: 2rem;           /* h-8 */
+    border: 4px solid rgb(156, 163, 175); /* border-gray-400 */
+    border-top-color: transparent;
+    border-radius: 9999px;  /* rounded-full */
+    animation: spin 1s linear infinite;    /* animate-spin */
 }
 
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== TYPOGRAPHY ===== */
 h1 {
     font-size: 2.5rem;
 }
@@ -40,7 +45,6 @@ h3 {
 
 p {
     margin-bottom: 1rem;
-    color: #cbd5e0;
 }
 
 a {
@@ -54,6 +58,13 @@ a:hover {
     text-decoration: underline;
 }
 
+/* ===== PERSONALIZED COLORS ===== */
+@theme {
+    --color-darkissue: #0a1128;
+    --color-midissue: #202240;
+    --color-lightissue: #3a3f66;
+}
+
 /* ===== BUTTONS ===== */
 button {
     font-family: inherit;
@@ -62,9 +73,15 @@ button {
     border: none;
     border-radius: 8px;
     background: #4a7ba7;
-    color: #ffffff;
     cursor: pointer;
     transition: all 0.3s ease;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    line-height: 1;
+    text-align: center;
 }
 
 button:hover {
@@ -81,6 +98,39 @@ button:disabled {
     background: #a0aec0;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ===== RESPONSE BUTTONS ===== */
+.selected-response {
+    background: #304d73;
+    transform: translateY(2px);
+    box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3);
+}
+
+.correct-response {
+    background: #2f6f4e;
+    transform: translateY(2px);
+    box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3);
+}
+
+.correct-response:disabled {
+    background: #2f6f4e;
+    transform: translateY(2px);
+    box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3); 
+    cursor: not-allowed;
+}
+
+.bad-response {
+    background: #7a3a3a;;
+    transform: translateY(2px);
+    box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3); 
+}
+
+.bad-response:disabled {
+    background: #7a3a3a;;
+    transform: translateY(2px);
+    box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3); 
+    cursor: not-allowed;
 }
 
 /* ===== INPUTS ===== */
@@ -115,21 +165,6 @@ input::placeholder {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* ===== UTILITIES ===== */
-.text-center {
-    text-align: center;
-}
-
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
-.mt-4 { margin-top: 2rem; }
-
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 2rem; }
-
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
     width: 10px;
@@ -139,26 +174,11 @@ input::placeholder {
     background: #0a1128;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #4a7ba7;
-    border-radius: 5px;
-}
-
 ::-webkit-scrollbar-thumb:hover {
-    background: #6a9bc7;
+    background: #4a7ba7;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    html {
-        font-size: 14px;
-    }
-    
-    h1 {
-        font-size: 2rem;
-    }
-    
-    h2 {
-        font-size: 1.5rem;
-    }
+::-webkit-scrollbar-thumb {
+    background: #6a9bc7;
+    border-radius: 5px;
 }

@@ -32,12 +32,12 @@ function Question({question, showResult, setSelected}) {
     }
 
     return (
-        <div className="Home-question-display">
+        <div className="m-2">
             <h3 className="text-center">Question n°{question.numQuestion+1}</h3>
 
-            <p className="text-center">{question.question}</p>
+            <p className="text-center text-gray-400">{question.question}</p>
 
-            <div className="Home-question-options">
+            <div className="grid grid-cols-2 gap-3">
                 {question.options.map((option, index) => (
                     <button
                         className={getButtonClass(index)}
