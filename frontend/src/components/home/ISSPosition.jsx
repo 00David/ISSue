@@ -31,7 +31,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // CURRENT ISS (polling)
             if (canShowCurrentPosition) {
                 try {
-                    const response = await axios.get('/api/get-iss-current-position');
+                    const response = await axios.get('/api/external/iss');
                     const { latitude, longitude } = response.data;
                     setISSCurrentPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
@@ -43,7 +43,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // QUIZ ISS (one shot, on first loading)
             if (firstLoad) {
                 try {
-                    const response = await axios.get('/api/iss/'+encodeURIComponent(ISSQuizDate));
+                    const response = await axios.get('/api/ressources/iss/'+encodeURIComponent(ISSQuizDate));
                     const { latitude, longitude } = response.data;
                     setISSQuizPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
@@ -111,7 +111,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
                     attribution='&copy; OpenStreetMap contributors'
                 />
                 <Marker position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}>
-                    <Popup>🛰️ ISS is here!</Popup>
+                    <Popup>{currentIsSelected ? "🛰️ ISS is here!" : "🛰️ ISS was here!"}</Popup>
                 </Marker>
             </MapContainer>
             

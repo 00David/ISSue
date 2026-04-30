@@ -22,7 +22,7 @@ var collectionNameQuizR = "quizresponses"
 func GetQuizResponses(db *mongo.Database, ctx context.Context, id int32) (QuizResponses, error) {
 	collection := db.Collection(collectionNameQuizR)
 
-	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
+	filter := bson.D{{Key: "idQuizResponses", Value: id}}
 	var quizR QuizResponses
 	err := collection.FindOne(ctx, filter).Decode(&quizR)
 	return quizR, err
@@ -54,9 +54,9 @@ func UpdateQuizResponsesNote(db *mongo.Database, ctx context.Context,
 	id int32, newNote int32) error {
 	collection := db.Collection(collectionNameQuizR)
 
-	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
+	filter := bson.D{{Key: "idQuizResponses", Value: id}}
 	update := bson.D{{Key: "$set",
-		Value: bson.D{{Key: "Note", Value: newNote}},
+		Value: bson.D{{Key: "note", Value: newNote}},
 	}}
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
@@ -67,9 +67,9 @@ func UpdateQuizResponsesComment(db *mongo.Database, ctx context.Context,
 	id int32, newComment string) error {
 	collection := db.Collection(collectionNameQuizR)
 
-	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
+	filter := bson.D{{Key: "idQuizResponses", Value: id}}
 	update := bson.D{{Key: "$set",
-		Value: bson.D{{Key: "Comment", Value: newComment}},
+		Value: bson.D{{Key: "comment", Value: newComment}},
 	}}
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
@@ -79,7 +79,7 @@ func UpdateQuizResponsesComment(db *mongo.Database, ctx context.Context,
 func DeleteQuizResponses(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameQuizR)
 
-	filter := bson.D{{Key: "IdQuizResponses", Value: id}}
+	filter := bson.D{{Key: "idQuizResponses", Value: id}}
 	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
@@ -88,18 +88,18 @@ func DeleteQuizResponses(db *mongo.Database, ctx context.Context, id int32) erro
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/quiz-responses[/id]" handler
+// "/api/ressources/quiz-responses[/id]" handler
 func QuizResponsesHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential id parameter
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/quiz-responses/")
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/quiz-responses/")
 
 		if idStr == "" {
-			fmt.Println("Request received on '/api/quiz-responses'")
+			fmt.Println("Request received on '/api/ressources/quiz-responses'")
 			quizResponsesHandlerWithoutId(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/quiz-responses/id'")
+			fmt.Println("Request received on '/api/ressources/quiz-responses/id'")
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
@@ -112,7 +112,7 @@ func QuizResponsesHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/quiz-responses" handler
+// "/api/ressources/quiz-responses" handler
 func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
@@ -137,7 +137,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]any{
 			"message":         "quiz responses successfuly created in DB",
-			"IdQuizResponses": id,
+			"idQuizResponses": id,
 		})
 
 	default:
@@ -146,7 +146,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 	}
 }
 
-// "/api/quiz-responses/id" handler
+// "/api/ressources/quiz-responses/id" handler
 func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET

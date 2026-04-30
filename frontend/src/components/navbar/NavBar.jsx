@@ -30,8 +30,10 @@ function NavBar({connected}) {
 
             <div id="navbar-3" className="flex justify-center items-center px-2">
                 {connected == -1 ? 
-                    <UserRoundX className= "cursor-pointer  hover:text-gray-400" ></UserRoundX>
-                    : <UserRound className= "cursor-pointer  hover:text-gray-400" ></UserRound>
+                    <UserRoundX className= "cursor-pointer  hover:text-gray-400" 
+                        onClick={() => navigate("/login")}></UserRoundX>
+                    : <UserRound className= "cursor-pointer  hover:text-gray-400" 
+                        onClick={() => navigate("/profile/"+connected)}></UserRound>
                 }
             </div>
         </nav>

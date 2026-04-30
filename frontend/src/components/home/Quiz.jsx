@@ -17,7 +17,7 @@ function Quiz({connected, setConnected}) {
         const fetchTodayQuiz = async () => {
             try {
                 const todayDate = new Date().toISOString();
-                const response = await axios.get('/api/quizzes/'+encodeURIComponent(todayDate));
+                const response = await axios.get('/api/ressources/quizzes/'+encodeURIComponent(todayDate));
                 setQuiz(response.data);
                 setSelected(Array(response.data.questions.length).fill(-1));
                 setLoading(false);

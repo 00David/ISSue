@@ -11,7 +11,7 @@ import (
 )
 
 // ============================================================
-// ======================= STRUCTURES =========================
+// ================== STRUCTURES (in DB) ======================
 // ============================================================
 
 // ISS postion
@@ -66,6 +66,50 @@ type User struct {
 	Password         string  `json:"password" bson:"password"`                 // user HASHED password
 	RespondedQuizzes []int32 `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user responded "Quiz"
 }
+
+// ============================================================
+// ================== ON USER GET METHOD ======================
+// ============================================================
+
+// Public informations of a user
+type PublicUser struct {
+	IdUser           int32   `json:"idUser"`
+	Username         string  `json:"username"`
+	RespondedQuizzes []int32 `json:"respondedQuizzes"`
+}
+
+// Private informations of a user
+type PrivateUser struct {
+	IdUser           int32   `json:"idUser"`
+	Username         string  `json:"username"`
+	Email            string  `json:"email"`
+	LenPassword      int32   `json:"lenpassword"`
+	RespondedQuizzes []int32 `json:"respondedQuizzes"`
+}
+
+// Get the public structure representing a User
+func toPublicUser(u User) PublicUser {
+	return PublicUser{
+		IdUser:           u.IdUser,
+		Username:         u.Username,
+		RespondedQuizzes: u.RespondedQuizzes,
+	}
+}
+
+// Get the private structure representing a User
+func toPrivateUser(u User) PrivateUser {
+	return PrivateUser{
+		IdUser:           u.IdUser,
+		Username:         u.Username,
+		Email:            u.Email,
+		LenPassword:      int32(len(u.Password)),
+		RespondedQuizzes: u.RespondedQuizzes,
+	}
+}
+
+// ============================================================
+// ===================== HELPER METHOD ========================
+// ============================================================
 
 // Returns the first available id for a given database collection, and by giving the id label used in it ("IdUser" for instance)
 func createUniqueId(collection *mongo.Collection, ctx context.Context, idLabel string) (int32, error) {

@@ -23,7 +23,7 @@ var collectionNameQuiz = "quizzes"
 func GetQuiz(db *mongo.Database, ctx context.Context, id int32) (Quiz, error) {
 	collection := db.Collection(collectionNameQuiz)
 
-	filter := bson.D{{Key: "IdQuiz", Value: id}}
+	filter := bson.D{{Key: "idQuiz", Value: id}}
 	var quiz Quiz
 	err := collection.FindOne(ctx, filter).Decode(&quiz)
 	return quiz, err
@@ -81,7 +81,7 @@ func CreateQuiz(db *mongo.Database, ctx context.Context,
 func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameQuiz)
 
-	filter := bson.D{{Key: "IdQuiz", Value: id}}
+	filter := bson.D{{Key: "idQuiz", Value: id}}
 	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
@@ -90,18 +90,18 @@ func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/quizzes[/param]" handler. param can be a quiz id or a date.
+// "/api/ressources/quizzes[/param]" handler. param can be a quiz id or a date.
 func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential parameter
-		paramStr := strings.TrimPrefix(r.URL.Path, "/api/quizzes/")
+		paramStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/quizzes/")
 
 		if paramStr == "" {
-			fmt.Println("Request received on '/api/quizzes'")
-			quizHandlerWithoutId(db, w, r)
+			fmt.Println("Request received on '/api/ressources/quizzes'")
+			quizHandlerWithoutParam(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/quizzes/param'")
+			fmt.Println("Request received on '/api/ressources/quizzes/param'")
 
 			// Checks if the parameter is an integer
 			id64, err := strconv.ParseInt(paramStr, 10, 32)
@@ -125,8 +125,8 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/quizzes" handler
-func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
+// "/api/ressources/quizzes" handler
+func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
 
@@ -150,7 +150,7 @@ func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]any{
 			"message": "quiz successfuly created in DB",
-			"IdQuiz":  id,
+			"idQuiz":  id,
 		})
 
 	default:
@@ -159,7 +159,7 @@ func quizHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 	}
 }
 
-// "/api/quizzes/date" handler
+// "/api/ressources/quizzes/date" handler
 func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
 	switch r.Method {
 	case http.MethodGet: // GET
@@ -183,7 +183,7 @@ func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// "/api/quizzes/id" handler
+// "/api/ressources/quizzes/id" handler
 func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET

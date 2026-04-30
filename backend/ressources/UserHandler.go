@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/00David/ISSue/backend/authorizations"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -22,20 +23,20 @@ var collectionNameUsers = "users"
 func GetUser(db *mongo.Database, ctx context.Context, id int32) (User, error) {
 	collection := db.Collection(collectionNameUsers)
 
-	filter := bson.D{{Key: "IdUser", Value: id}}
+	filter := bson.D{{Key: "idUser", Value: id}}
 	var user User
 	err := collection.FindOne(ctx, filter).Decode(&user)
 	return user, err
 }
 
-// Returns a User in DB for a given string information (Username, or Email)
+// Returns a User in DB for a given string information (username, or email)
 func GetUserWithInfo(db *mongo.Database, ctx context.Context,
 	field string, fieldValue string) (User, error) {
-	collection := db.Collection(collectionNameQuiz)
+	collection := db.Collection(collectionNameUsers)
 
 	validFields := map[string]bool{
-		"Username": true,
-		"Email":    true,
+		"username": true,
+		"email":    true,
 	}
 	if !validFields[field] {
 		return User{}, fmt.Errorf("Invalid field : %s", field)
@@ -67,35 +68,35 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 	return id, err
 }
 
-// Updates a User string information (Username, or Email, or Password)
+// Updates a User string information (username, or email, or password)
 func UpdateUserInfo(db *mongo.Database, ctx context.Context,
 	id int32, fieldToModify string, newFieldValue string) error {
-	collection := db.Collection(collectionNameQuizR)
+	collection := db.Collection(collectionNameUsers)
 
 	validFields := map[string]bool{
-		"Username": true,
-		"Email":    true,
-		"Password": true,
+		"username": true,
+		"email":    true,
+		"password": true,
 	}
 	if !validFields[fieldToModify] {
 		return fmt.Errorf("Invalid field : %s", fieldToModify)
 	}
 
 	// If a user already exists with the new username or email, error
-	if fieldToModify == "Username" {
-		_, err := GetUserWithInfo(db, ctx, "Username", newFieldValue)
+	if fieldToModify == "username" {
+		_, err := GetUserWithInfo(db, ctx, "username", newFieldValue)
 		if err == nil {
 			return fmt.Errorf("A user already exists with the same username")
 		}
 	}
-	if fieldToModify == "Email" {
-		_, err := GetUserWithInfo(db, ctx, "Email", newFieldValue)
+	if fieldToModify == "email" {
+		_, err := GetUserWithInfo(db, ctx, "email", newFieldValue)
 		if err == nil {
 			return fmt.Errorf("A user already exists with the same email")
 		}
 	}
 
-	filter := bson.D{{Key: "IdUser", Value: id}}
+	filter := bson.D{{Key: "idUser", Value: id}}
 	update := bson.D{{Key: "$set",
 		Value: bson.D{{Key: fieldToModify, Value: newFieldValue}},
 	}}
@@ -106,11 +107,11 @@ func UpdateUserInfo(db *mongo.Database, ctx context.Context,
 // Updates a User responded quizzes indexes
 func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
 	id int32, newRespondedQuizzes []int32) error {
-	collection := db.Collection(collectionNameQuizR)
+	collection := db.Collection(collectionNameUsers)
 
-	filter := bson.D{{Key: "IdUser", Value: id}}
+	filter := bson.D{{Key: "idUser", Value: id}}
 	update := bson.D{{Key: "$set",
-		Value: bson.D{{Key: "RespondedQuizzes", Value: newRespondedQuizzes}},
+		Value: bson.D{{Key: "respondedQuizzes", Value: newRespondedQuizzes}},
 	}}
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
@@ -120,7 +121,7 @@ func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
 func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameUsers)
 
-	filter := bson.D{{Key: "IdUser", Value: id}}
+	filter := bson.D{{Key: "idUser", Value: id}}
 	_, err := collection.DeleteOne(ctx, filter)
 	return err
 }
@@ -129,31 +130,31 @@ func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/users[/id]" handler
-func UsersHandler(db *mongo.Database) http.HandlerFunc {
+// "/api/ressources/users[/id]" handler
+func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential id parameter
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/users/")
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/users/")
 
 		if idStr == "" {
-			fmt.Println("Request received on '/api/users'")
+			fmt.Println("Request received on '/api/ressources/users'")
 			userHandlerWithoutId(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/users/id'")
+			fmt.Println("Request received on '/api/ressources/users/id'")
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
 				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
 				return
 			}
-			userHandlerWithId(db, w, r, int32(id64))
+			userHandlerWithId(db, w, r, jwtSecret, int32(id64))
 		}
 
 	}
 }
 
-// "/api/users" handler
+// "/api/ressources/users" handler
 func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
@@ -178,7 +179,7 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]any{
 			"message": "user successfuly created in DB",
-			"IdUser":  id,
+			"idUser":  id,
 		})
 
 	default:
@@ -187,8 +188,12 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 	}
 }
 
-// "/api/users/id" handler
-func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
+// "/api/ressources/users/id" handler
+func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, jwtSecret []byte, id int32) {
+
+	// If the user token indicates that he is the concerned user : he can do any action on its data
+	allRights := authorizations.IsUserAuthorized(r, jwtSecret, id)
+
 	switch r.Method {
 	case http.MethodGet: // GET
 
@@ -202,10 +207,22 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(user)
+		if allRights {
+			// Return all of user data, knowing that it can only be the user wanting to retrieve it
+			json.NewEncoder(w).Encode(toPublicUser(user))
+		} else {
+			// Return only a partial user data otherwise
+			json.NewEncoder(w).Encode(toPrivateUser(user))
+		}
 
 	case http.MethodDelete: // DELETE
+
+		if !allRights {
+			http.Error(w, "Unauthorized deletion", http.StatusUnauthorized)
+			return
+		}
 
 		// Deletion of the User in DB
 		err := DeleteUser(db, r.Context(), id)
@@ -224,6 +241,11 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		})
 
 	case http.MethodPatch: // PATCH
+
+		if !allRights {
+			http.Error(w, "Unauthorized modification", http.StatusUnauthorized)
+			return
+		}
 
 		// Body decoding
 		var req User

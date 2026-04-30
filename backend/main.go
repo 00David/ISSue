@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/00David/ISSue/backend/authentification"
+	"github.com/00David/ISSue/backend/external_apis"
 	"github.com/00David/ISSue/backend/ressources"
-	"github.com/00David/ISSue/backend/services"
 	"github.com/joho/godotenv"
 )
 
@@ -27,9 +28,11 @@ func main() {
 	}
 	addr := host + ":" + port
 
-	db_password := os.Getenv("DB_PASSWORD")
+	dbPassword := os.Getenv("DB_PASSWORD")
 
-	gemini_key := os.Getenv("GEMINI_API_KEY")
+	geminiKey := os.Getenv("GEMINI_API_KEY")
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	local_db := false
 	if len(os.Args) == 2 && os.Args[1] == "local" {
@@ -37,7 +40,7 @@ func main() {
 	}
 
 	// Database connection
-	client, db := connect_db(db_password, local_db)
+	client, db := connect_db(dbPassword, local_db)
 	defer func() {
 		if err := client.Disconnect(context.Background()); err != nil {
 			log.Println("⚠️ Disconnection error.\nDetails : ", err)
@@ -45,20 +48,29 @@ func main() {
 	}()
 
 	// Resquest handlers
-	// Services
-	http.HandleFunc("/api/get-iss-current-position", services.CurrentISSHandler(db))
-	http.HandleFunc("/api/login", services.LoginHandler(db))
-	http.HandleFunc("/api/signup", services.SignupHandler(db))
-	http.HandleFunc("/api/fetch-quiz", services.FetchQuizHandler(db, gemini_key))
+
+	// Authentification
+	http.HandleFunc("/api/authentification/me", authentification.MeHandler(db, jwtSecret))
+	http.HandleFunc("/api/authentification/login", authentification.LoginHandler(db, jwtSecret))
+	http.HandleFunc("/api/authentification/signup", authentification.SignupHandler(db, jwtSecret))
+	http.HandleFunc("/api/authentification/logout", authentification.LogoutHandler(db, jwtSecret))
+
+	// External API communications
+	http.HandleFunc("/api/external/iss", external_apis.CurrentISSHandler(db))
+	http.HandleFunc("/api/external/generate-quiz", external_apis.GenerateQuizHandler(db, geminiKey))
+
 	// Ressources
-	http.HandleFunc("/api/iss", ressources.ISSHandler(db))
-	http.HandleFunc("/api/iss/", ressources.ISSHandler(db))
-	http.HandleFunc("/api/quizzes", ressources.QuizHandler(db))
-	http.HandleFunc("/api/quizzes/", ressources.QuizHandler(db))
-	http.HandleFunc("/api/quiz-responses", ressources.QuizResponsesHandler(db))
-	http.HandleFunc("/api/quiz-responses/", ressources.QuizResponsesHandler(db))
-	http.HandleFunc("/api/users", ressources.UsersHandler(db))
-	http.HandleFunc("/api/users/", ressources.UsersHandler(db))
+	http.HandleFunc("/api/ressources/iss", ressources.ISSHandler(db))
+	http.HandleFunc("/api/ressources/iss/", ressources.ISSHandler(db))
+
+	http.HandleFunc("/api/ressources/quizzes", ressources.QuizHandler(db))
+	http.HandleFunc("/api/ressources/quizzes/", ressources.QuizHandler(db))
+
+	http.HandleFunc("/api/ressources/quiz-responses", ressources.QuizResponsesHandler(db))
+	http.HandleFunc("/api/ressources/quiz-responses/", ressources.QuizResponsesHandler(db))
+
+	http.HandleFunc("/api/ressources/users", ressources.UsersHandler(db, jwtSecret))
+	http.HandleFunc("/api/ressources/users/", ressources.UsersHandler(db, jwtSecret))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
 	http.ListenAndServe(addr, nil)

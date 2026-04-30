@@ -7,20 +7,24 @@ import NotFound from '../notfound/NotFound.jsx'
 
 function Home({connected, setConnected}) {
 
+    useEffect(() => {
+        document.title = "ISSue - Home";
+    }, []);
+
     const todayDate = new Date().toISOString();
     return (
         <div id="Home-display" className="grid grid-cols-[10%_80%_10%] py-10">
             
-            <div id="Home-left" >
-            </div>
+            <aside id="Home-left" >
+            </aside>
 
             <div id="Home-center" className="justify-center items-center space-y-10">
                 <ISSPosition canShowCurrentPosition={true} ISSQuizDate={todayDate} />
                 <Quiz connected={connected} setConnected={setConnected} />
             </div>
 
-            <div id="Home-right">
-            </div>
+            <aside id="Home-right">
+            </aside>
             
         </div>
     )

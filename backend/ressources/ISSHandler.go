@@ -10,7 +10,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // ============================================================
@@ -33,20 +32,6 @@ func GetISSPosition(db *mongo.Database, ctx context.Context, date time.Time) (IS
 		},
 	}
 
-	var isspos ISSPosition
-	err := collection.FindOne(ctx, filter).Decode(&isspos)
-	return isspos, err
-}
-
-// Returns the last ISS position in database
-func GetLastISSPosition(db *mongo.Database, ctx context.Context) (ISSPosition, error) {
-	collection := db.Collection(collectionNameISS)
-
-	filter := options.FindOne().SetSort(
-		bson.D{
-			{Key: "timestamp", Value: -1},
-		},
-	)
 	var isspos ISSPosition
 	err := collection.FindOne(ctx, filter).Decode(&isspos)
 	return isspos, err
@@ -99,18 +84,18 @@ func DeleteISSPosition(db *mongo.Database, ctx context.Context, date time.Time) 
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/iss[/dd-mm-yyyy]" handler
+// "/api/ressources/iss[/dd-mm-yyyy]" handler
 func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential date parameter
-		dateStr := strings.TrimPrefix(r.URL.Path, "/api/iss/")
+		dateStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/iss/")
 
 		if dateStr == "" {
-			fmt.Println("Request received on '/api/iss'")
+			fmt.Println("Request received on '/api/ressources/iss'")
 			ISShandlerWithoutDate(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/iss/date'")
+			fmt.Println("Request received on '/api/ressources/iss/date'")
 
 			// Checks if the parameter is a date
 			date, err := time.Parse(time.RFC3339, dateStr)
@@ -127,24 +112,9 @@ func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/iss" handler
+// "/api/ressources/iss" handler
 func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodGet: // GET
-
-		// Getting last ISS position in DB
-		issposition, err := GetLastISSPosition(db, r.Context())
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No ISS Position", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(issposition)
-
 	case http.MethodPost: // POST
 
 		// Body decoding
@@ -176,7 +146,7 @@ func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Re
 	}
 }
 
-// "/api/iss/dd-mm-yyyy" handler
+// "/api/ressources/iss/dd-mm-yyyy" handler
 func ISShandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
 	switch r.Method {
 	case http.MethodGet: // GET
