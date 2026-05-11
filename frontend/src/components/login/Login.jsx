@@ -43,7 +43,7 @@ function Login({connected, setConnected}) {
             if (err.response?.status === 401 || err.response?.status === 404) {
                 setError("Invalid username or password");
             } else {
-                console.error(err);
+                console.error("Error while loging in :\n"+err.response?.data);
                 setError("Server error");
             }
         }

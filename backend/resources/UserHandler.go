@@ -1,4 +1,4 @@
-package ressources
+package resources
 
 import (
 	"context"
@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
-	"github.com/00David/ISSue/backend/authorizations"
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -130,18 +129,18 @@ func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/ressources/users[/id]" handler
+// "/api/resources/users[/id]" handler
 func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential id parameter
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/users/")
+		idStr := utility.GetSuffixParams("/api/resources/users/", r)
 
 		if idStr == "" {
-			fmt.Println("Request received on '/api/ressources/users'")
+			fmt.Println("Request received on '/api/resources/users'")
 			userHandlerWithoutId(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/ressources/users/id'")
+			fmt.Println("Request received on '/api/resources/users/id'")
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
@@ -154,7 +153,7 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	}
 }
 
-// "/api/ressources/users" handler
+// "/api/resources/users" handler
 func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
@@ -188,11 +187,11 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 	}
 }
 
-// "/api/ressources/users/id" handler
+// "/api/resources/users/id" handler
 func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, jwtSecret []byte, id int32) {
 
 	// If the user token indicates that he is the concerned user : he can do any action on its data
-	allRights := authorizations.IsUserAuthorized(r, jwtSecret, id)
+	allRights := utility.IsUserAuthorized(r, jwtSecret, id)
 
 	switch r.Method {
 	case http.MethodGet: // GET
@@ -211,10 +210,10 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		w.Header().Set("Content-Type", "application/json")
 		if allRights {
 			// Return all of user data, knowing that it can only be the user wanting to retrieve it
-			json.NewEncoder(w).Encode(toPublicUser(user))
+			json.NewEncoder(w).Encode(toPrivateUser(user))
 		} else {
 			// Return only a partial user data otherwise
-			json.NewEncoder(w).Encode(toPrivateUser(user))
+			json.NewEncoder(w).Encode(toPublicUser(user))
 		}
 
 	case http.MethodDelete: // DELETE

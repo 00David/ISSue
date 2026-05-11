@@ -35,7 +35,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
                     const { latitude, longitude } = response.data;
                     setISSCurrentPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
-                    console.error("Error while fetching current ISS position:\n", error);
+                    console.error("Error while fetching current ISS position:\n", error.response?.data);
                     fetchError = true;
                 }
             }
@@ -43,11 +43,11 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // QUIZ ISS (one shot, on first loading)
             if (firstLoad) {
                 try {
-                    const response = await axios.get('/api/ressources/iss/'+encodeURIComponent(ISSQuizDate));
+                    const response = await axios.get('/api/resources/iss/'+encodeURIComponent(ISSQuizDate));
                     const { latitude, longitude } = response.data;
                     setISSQuizPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
-                    console.error("Error while fetching quiz ISS position:\n", error);
+                    console.error("Error while fetching quiz ISS position:\n", error.response?.data);
                     fetchError = true;
                 }
             }

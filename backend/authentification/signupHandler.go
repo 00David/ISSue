@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,14 +39,14 @@ func SignupHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		defer r.Body.Close()
 
 		// We look if a user with the same username already exists
-		_, err = ressources.GetUserWithInfo(db, r.Context(), "username", req.Username)
+		_, err = resources.GetUserWithInfo(db, r.Context(), "username", req.Username)
 		if err == nil {
 			http.Error(w, "User already exists with the same username", http.StatusConflict)
 			return
 		}
 
 		// We look if a user with the same email already exists
-		_, err = ressources.GetUserWithInfo(db, r.Context(), "email", req.Email)
+		_, err = resources.GetUserWithInfo(db, r.Context(), "email", req.Email)
 		if err == nil {
 			http.Error(w, "User already exists with the same email", http.StatusConflict)
 			return
@@ -62,14 +63,14 @@ func SignupHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		}
 
 		// The new user is created in the DB
-		idUser, err := ressources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
+		idUser, err := resources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// Create the JWT token and the cookie containing it
-		err = createTokenAndCookie(w, jwtSecret, idUser)
+		err = utility.CreateTokenAndCookie(w, jwtSecret, idUser)
 		if err != nil {
 			http.Error(w, "Error while generating JWT token : "+err.Error(), http.StatusInternalServerError)
 			return

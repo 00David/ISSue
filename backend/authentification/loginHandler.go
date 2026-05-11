@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -37,7 +38,7 @@ func LoginHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		defer r.Body.Close()
 
 		// We get the user thanks to its given username
-		user, err := ressources.GetUserWithInfo(db, r.Context(), "username", req.Username)
+		user, err := resources.GetUserWithInfo(db, r.Context(), "username", req.Username)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				fmt.Println("Ici")
@@ -59,7 +60,7 @@ func LoginHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		}
 
 		// Create the JWT token and the cookie containing it
-		err = createTokenAndCookie(w, jwtSecret, user.IdUser)
+		err = utility.CreateTokenAndCookie(w, jwtSecret, user.IdUser)
 		if err != nil {
 			http.Error(w, "Error while generating JWT token : "+err.Error(), http.StatusInternalServerError)
 			return

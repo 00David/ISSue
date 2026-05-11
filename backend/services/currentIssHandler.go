@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -55,7 +55,7 @@ func CurrentISSHandler(db *mongo.Database) http.HandlerFunc {
 		}
 
 		// Response construction
-		position := ressources.ISSPosition{
+		position := resources.ISSPosition{
 			Date:      time.Unix(raw.Timestamp, 0),
 			Timestamp: raw.Timestamp,
 			Latitude:  raw.ISSPosition.Latitude,

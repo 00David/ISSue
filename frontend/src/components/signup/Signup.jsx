@@ -48,7 +48,7 @@ function Signup({ connected, setConnected }) {
             } else if (err.response?.status === 409) {
                 setError("Username or email already taken");
             } else {
-                console.error(err);
+                console.error("Error while signing up :\n"+err.response?.data);
                 setError("Server error");
             }
         }

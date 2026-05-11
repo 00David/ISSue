@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,14 +38,14 @@ func SignupHandler(db *mongo.Database) http.HandlerFunc {
 		defer r.Body.Close()
 
 		// We look if a user with the same username already exists
-		_, err = ressources.GetUserWithInfo(db, r.Context(), "Username", req.Username)
+		_, err = resources.GetUserWithInfo(db, r.Context(), "Username", req.Username)
 		if err == nil {
 			http.Error(w, "User already exists with the same username", http.StatusConflict)
 			return
 		}
 
 		// We look if a user with the same email already exists
-		_, err = ressources.GetUserWithInfo(db, r.Context(), "Email", req.Email)
+		_, err = resources.GetUserWithInfo(db, r.Context(), "Email", req.Email)
 		if err == nil {
 			http.Error(w, "User already exists with the same email", http.StatusConflict)
 			return
@@ -62,7 +62,7 @@ func SignupHandler(db *mongo.Database) http.HandlerFunc {
 		}
 
 		// The new user is created in the DB
-		_, err = ressources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
+		_, err = resources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return

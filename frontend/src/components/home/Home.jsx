@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import ISSPosition from './ISSPosition.jsx'
-import Quiz from './Quiz.jsx'
+import Quiz from '../quiz/Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
 function Home({connected, setConnected}) {
@@ -20,7 +20,7 @@ function Home({connected, setConnected}) {
 
             <div id="Home-center" className="justify-center items-center space-y-10">
                 <ISSPosition canShowCurrentPosition={true} ISSQuizDate={todayDate} />
-                <Quiz connected={connected} setConnected={setConnected} />
+                <Quiz connected={connected} />
             </div>
 
             <aside id="Home-right">

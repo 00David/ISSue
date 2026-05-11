@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -37,7 +37,7 @@ func LoginHandler(db *mongo.Database) http.HandlerFunc {
 		defer r.Body.Close()
 
 		// We get the user thanks to its given username
-		user, err := ressources.GetUserWithInfo(db, r.Context(), "Username", req.Username)
+		user, err := resources.GetUserWithInfo(db, r.Context(), "Username", req.Username)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				http.Error(w, "User not found", http.StatusNotFound)

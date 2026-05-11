@@ -1,4 +1,4 @@
-package ressources
+package resources
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -90,18 +90,18 @@ func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/ressources/quizzes[/param]" handler. param can be a quiz id or a date.
+// "/api/resources/quizzes[/param]" handler. param can be a quiz id or a date.
 func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential parameter
-		paramStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/quizzes/")
+		paramStr := utility.GetSuffixParams("/api/resources/quizzes/", r)
 
 		if paramStr == "" {
-			fmt.Println("Request received on '/api/ressources/quizzes'")
+			fmt.Println("Request received on '/api/resources/quizzes'")
 			quizHandlerWithoutParam(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/ressources/quizzes/param'")
+			fmt.Println("Request received on '/api/resources/quizzes/param'")
 
 			// Checks if the parameter is an integer
 			id64, err := strconv.ParseInt(paramStr, 10, 32)
@@ -125,7 +125,7 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/ressources/quizzes" handler
+// "/api/resources/quizzes" handler
 func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
@@ -159,7 +159,7 @@ func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.
 	}
 }
 
-// "/api/ressources/quizzes/date" handler
+// "/api/resources/quizzes/date" handler
 func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
 	switch r.Method {
 	case http.MethodGet: // GET
@@ -183,7 +183,7 @@ func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// "/api/ressources/quizzes/id" handler
+// "/api/resources/quizzes/id" handler
 func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET

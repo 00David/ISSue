@@ -1,4 +1,4 @@
-package ressources
+package resources
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -88,18 +88,26 @@ func DeleteQuizResponses(db *mongo.Database, ctx context.Context, id int32) erro
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/ressources/quiz-responses[/id]" handler
-func QuizResponsesHandler(db *mongo.Database) http.HandlerFunc {
+// "/api/resources/quiz-responses[/params]" handler
+func QuizResponsesHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential id parameter
-		idStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/quiz-responses/")
+		idStr := utility.GetSuffixParams("/api/resources/quiz-responses/", r)
 
-		if idStr == "" {
-			fmt.Println("Request received on '/api/ressources/quiz-responses'")
-			quizResponsesHandlerWithoutId(db, w, r)
+		// gets the potential quiz and user parameters
+		query := r.URL.Query()
+		idQuizStr := query.Get("idquiz")
+		idUserStr := query.Get("iduser")
+
+		if idStr == "" && len(query) == 0 {
+			fmt.Println("Request received on '/api/resources/quiz-responses'")
+			quizResponsesHandlerWithoutId(db, w, r, jwtSecret)
+		} else if idQuizStr != "" && idUserStr != "" {
+			fmt.Println("Request received on '/api/resources/quiz-responses?idquiz=’id1’&iduser=’id2’'")
+			quizResponsesHandlerWithQuizAnsUser(db, w, r, idQuizStr, idUserStr)
 		} else {
-			fmt.Println("Request received on '/api/ressources/quiz-responses/id'")
+			fmt.Println("Request received on '/api/resources/quiz-responses/id'")
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
@@ -107,13 +115,15 @@ func QuizResponsesHandler(db *mongo.Database) http.HandlerFunc {
 				return
 			}
 			quizResponsesHandlerWithId(db, w, r, int32(id64))
+
 		}
 
 	}
 }
 
-// "/api/ressources/quiz-responses" handler
-func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
+// "/api/resources/quiz-responses" handler
+func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
+	r *http.Request, jwtSecret []byte) {
 	switch r.Method {
 	case http.MethodPost: // POST
 
@@ -126,8 +136,47 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 		}
 		defer r.Body.Close()
 
+		// Extract user ID from JWT
+		userID, err := utility.ExtractUserIDFromRequest(r, jwtSecret)
+		if err != nil {
+			switch err {
+			case utility.ErrNoCookie:
+				http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
+				return
+			case utility.ErrInvalidToken:
+				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+				return
+			case utility.ErrInvalidClaims, utility.ErrMissingSub, utility.ErrInvalidSub:
+				http.Error(w, "Malformed token: "+err.Error(), http.StatusUnauthorized)
+				return
+			default:
+				http.Error(w, "Authentication error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Get the user in DB
+		user, err := GetUser(db, r.Context(), userID)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No User for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		// Creation of the QuizResponses in DB
-		id, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, req.Note, req.Comment)
+		idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, req.Note, req.Comment)
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Update user's responded quizzes ids
+		newRespondedQuizzes := append(user.RespondedQuizzes, idQuizR)
+		err = UpdateUserRespondedQuizzes(db, r.Context(), userID,
+			newRespondedQuizzes)
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
@@ -137,7 +186,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]any{
 			"message":         "quiz responses successfuly created in DB",
-			"idQuizResponses": id,
+			"idQuizResponses": idQuizR,
 		})
 
 	default:
@@ -146,7 +195,72 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r 
 	}
 }
 
-// "/api/ressources/quiz-responses/id" handler
+// "/api/resources/quiz-responses?idquiz=’id1’&iduser=’id2’" handler
+func quizResponsesHandlerWithQuizAnsUser(db *mongo.Database, w http.ResponseWriter,
+	r *http.Request, idQuizStr string, idUserStr string) {
+	switch r.Method {
+	case http.MethodGet: // GET
+
+		// Verify the query parameters format
+		if idQuizStr == "" {
+			http.Error(w, "missing idquiz", http.StatusBadRequest)
+			return
+		}
+		if idUserStr == "" {
+			http.Error(w, "missing iduser", http.StatusBadRequest)
+			return
+		}
+
+		idQuiz64, err := strconv.ParseInt(idQuizStr, 10, 32)
+		if err != nil {
+			http.Error(w, "invalid idquiz", http.StatusBadRequest)
+			return
+		}
+		idUser64, err := strconv.ParseInt(idUserStr, 10, 32)
+		if err != nil {
+			http.Error(w, "invalid iduser", http.StatusBadRequest)
+			return
+		}
+		idQuiz := int32(idQuiz64)
+		idUser := int32(idUser64)
+
+		// Get the User in DB
+		user, err := GetUser(db, r.Context(), idUser)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No User for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Search among responded quizzes if one has responded to the given quiz
+		for _, idRespondedQuizes := range user.RespondedQuizzes {
+			quizR, err := GetQuizResponses(db, r.Context(), idRespondedQuizes)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Return the quiz responses if found
+			if quizR.IdQuiz == idQuiz {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(quizR)
+				return
+			}
+		}
+
+		http.Error(w, "No Quiz responses for those user and quiz ids", http.StatusNotFound)
+		return
+	}
+}
+
+// "/api/resources/quiz-responses/id" handler
 func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET

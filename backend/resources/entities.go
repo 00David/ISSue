@@ -1,4 +1,4 @@
-package ressources
+package resources
 
 import (
 	"context"
@@ -47,7 +47,7 @@ type QuizResponses struct {
 	IdQuiz          int32      `json:"idQuiz" bson:"idQuiz"`                   // "Quiz" id, giving the quiz to which it had responded
 	IdUser          int32      `json:"idUser" bson:"idUser"`                   // "User" id, giving the user that has responded
 	Responses       []Response `json:"responses" bson:"responses"`             // quiz responses. For an index i, the corresponding question within the "Quiz" questions has the same index
-	Note            int32      `json:"note" bson:"note"`                       // a note given by the user to the quiz, from 0 to 3 (both inclusive)
+	Note            int32      `json:"note" bson:"note"`                       // a note given by the user to the quiz, from 1 to 5 (both inclusive)
 	Comment         string     `json:"comment" bson:"comment"`                 // a comment given by the user on the quiz
 }
 
@@ -83,7 +83,6 @@ type PrivateUser struct {
 	IdUser           int32   `json:"idUser"`
 	Username         string  `json:"username"`
 	Email            string  `json:"email"`
-	LenPassword      int32   `json:"lenpassword"`
 	RespondedQuizzes []int32 `json:"respondedQuizzes"`
 }
 
@@ -102,7 +101,6 @@ func toPrivateUser(u User) PrivateUser {
 		IdUser:           u.IdUser,
 		Username:         u.Username,
 		Email:            u.Email,
-		LenPassword:      int32(len(u.Password)),
 		RespondedQuizzes: u.RespondedQuizzes,
 	}
 }

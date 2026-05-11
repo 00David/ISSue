@@ -65,8 +65,8 @@ a:hover {
     --color-lightissue: #3a3f66;
 }
 
-/* ===== BUTTONS ===== */
-button {
+/* ===== QUIZ BUTTONS ===== */
+.quiz-button {
     font-family: inherit;
     font-size: 1rem;
     padding: 0.75rem 1.5rem;
@@ -84,23 +84,22 @@ button {
     text-align: center;
 }
 
-button:hover {
+.quiz-button:hover {
     background: #304d73;
     transform: translateY(2px);
     box-shadow: 0 4px 12px rgba(74, 123, 167, 0.3);
 }
 
-button:active {
+.quiz-button:active {
     transform: translateY(0);
 }
 
-button:disabled {
+.quiz-button:disabled {
     background: #a0aec0;
     cursor: not-allowed;
     transform: none;
 }
 
-/* ===== RESPONSE BUTTONS ===== */
 .selected-response {
     background: #304d73;
     transform: translateY(2px);
@@ -181,4 +180,16 @@ input::placeholder {
 ::-webkit-scrollbar-thumb {
     background: #6a9bc7;
     border-radius: 5px;
+}
+
+/* ===== POPUP ===== */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

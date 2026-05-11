@@ -19,13 +19,11 @@ function App() {
 				const response = await axios.get('/api/authentification/me', {
 					withCredentials: true
 				});
-				setConnected(response.data.id);
-			} catch (error) {
-				if (error.response?.status === 401) {
-					setConnected(-1); // Not connected
-				} else {
-					console.error("Error while fetching current connection state:\n", error);
+				if (response.data.id != -1) {
+					setConnected(response.data.id);
 				}
+			} catch (error) {
+				console.error("Error while fetching current connection state:\n", error);
 			}
 		}
 		fetchUser();

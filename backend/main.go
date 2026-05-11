@@ -9,7 +9,7 @@ import (
 
 	"github.com/00David/ISSue/backend/authentification"
 	"github.com/00David/ISSue/backend/external_apis"
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
 	"github.com/joho/godotenv"
 )
 
@@ -59,18 +59,18 @@ func main() {
 	http.HandleFunc("/api/external/iss", external_apis.CurrentISSHandler(db))
 	http.HandleFunc("/api/external/generate-quiz", external_apis.GenerateQuizHandler(db, geminiKey))
 
-	// Ressources
-	http.HandleFunc("/api/ressources/iss", ressources.ISSHandler(db))
-	http.HandleFunc("/api/ressources/iss/", ressources.ISSHandler(db))
+	// Resources
+	http.HandleFunc("/api/resources/iss", resources.ISSHandler(db))
+	http.HandleFunc("/api/resources/iss/", resources.ISSHandler(db))
 
-	http.HandleFunc("/api/ressources/quizzes", ressources.QuizHandler(db))
-	http.HandleFunc("/api/ressources/quizzes/", ressources.QuizHandler(db))
+	http.HandleFunc("/api/resources/quizzes", resources.QuizHandler(db))
+	http.HandleFunc("/api/resources/quizzes/", resources.QuizHandler(db))
 
-	http.HandleFunc("/api/ressources/quiz-responses", ressources.QuizResponsesHandler(db))
-	http.HandleFunc("/api/ressources/quiz-responses/", ressources.QuizResponsesHandler(db))
+	http.HandleFunc("/api/resources/quiz-responses", resources.QuizResponsesHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/quiz-responses/", resources.QuizResponsesHandler(db, jwtSecret))
 
-	http.HandleFunc("/api/ressources/users", ressources.UsersHandler(db, jwtSecret))
-	http.HandleFunc("/api/ressources/users/", ressources.UsersHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/users", resources.UsersHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
 	http.ListenAndServe(addr, nil)

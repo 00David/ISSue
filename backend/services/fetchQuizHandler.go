@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/00David/ISSue/backend/ressources"
+	"github.com/00David/ISSue/backend/resources"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"google.golang.org/genai"
 )
@@ -49,7 +49,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 
 		// Gets the ISSPosition in database for the current day
 		// if there is no ISSPosition, it creates a new ISSPosition, later inserted into the database if the quiz is successfully created
-		issPosition, err := ressources.GetISSPosition(db, r.Context(), time.Now())
+		issPosition, err := resources.GetISSPosition(db, r.Context(), time.Now())
 		newISSPosition := false
 		if err != nil && err == mongo.ErrNoDocuments {
 
@@ -74,7 +74,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 			}
 
 			// creates the new ISSPosition, inserted into DB after successfully creating the quiz
-			issPosition = ressources.ISSPosition{
+			issPosition = resources.ISSPosition{
 				Date:      time.Unix(raw.Timestamp, 0),
 				Timestamp: raw.Timestamp,
 				Latitude:  raw.ISSPosition.Latitude,
@@ -209,9 +209,9 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		}
 
 		// Conversion of the questions to our Question entity
-		questions := make([]ressources.Question, len(geminiQuiz.Questions))
+		questions := make([]resources.Question, len(geminiQuiz.Questions))
 		for i, q := range geminiQuiz.Questions {
-			questions[i] = ressources.Question{
+			questions[i] = resources.Question{
 				NumQuestion:   int32(i),
 				Question:      q.Question,
 				Options:       q.Options,
@@ -220,7 +220,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 		}
 
 		// Insertion of the quiz into our database
-		_, err = ressources.CreateQuiz(db, r.Context(),
+		_, err = resources.CreateQuiz(db, r.Context(),
 			issPosition.Date, questions, geminiQuiz.Country, geminiQuiz.CountryCode, geminiQuiz.Region, geminiQuiz.Ocean)
 		if err != nil {
 			http.Error(w, "New Quiz insertion failure : "+err.Error(), http.StatusInternalServerError)
@@ -229,7 +229,7 @@ func FetchQuizHandler(db *mongo.Database, gemini_key string) http.HandlerFunc {
 
 		// Insertion of the new ISSPosition into our database
 		if newISSPosition {
-			_, err = ressources.CreateISSPosition(db, r.Context(), issPosition.Timestamp, issPosition.Latitude, issPosition.Longitude)
+			_, err = resources.CreateISSPosition(db, r.Context(), issPosition.Timestamp, issPosition.Latitude, issPosition.Longitude)
 			if err != nil {
 				http.Error(w, "New ISSPosition insertion failure : "+err.Error(), http.StatusInternalServerError)
 				return

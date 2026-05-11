@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Spinner } from 'react-bootstrap';
 import ReactCountryFlag from "react-country-flag";
 
-function Question({question, showResult, setSelected}) {
+function Question({question, showResult, selected, setSelected}) {
 
-    const [selectedIndex, setSelectedIndex] = useState(-1); // local index of an answer, 0-3
+    const [selectedIndex, setSelectedIndex] = useState(selected[question.numQuestion]); // local index of an answer, 0-3
 
     function getButtonClass(index) {
         if (showResult) {
@@ -20,15 +20,15 @@ function Question({question, showResult, setSelected}) {
         return index === selectedIndex ? "selected-response" : "";
     }
 
-    function clickAnswerHandler(index){
+    function clickAnswerHandler(index) {
         if (selectedIndex === index) { // unselect answer if already selected and clicked
             setSelectedIndex(-1);
-            setSelected(-1);
+            setSelected(-1); // Give the info to the Quiz component
             return;
         }
 
         setSelectedIndex(index);
-        setSelected(index === question.indexResponse ? 1 : 0);
+        setSelected(index); // Give the info to the Quiz component
     }
 
     return (
@@ -40,7 +40,7 @@ function Question({question, showResult, setSelected}) {
             <div className="grid grid-cols-2 gap-3">
                 {question.options.map((option, index) => (
                     <button
-                        className={getButtonClass(index)}
+                        className={"quiz-button "+getButtonClass(index)}
                         key={index}
                         onClick={ () => clickAnswerHandler(index)}
                         disabled={showResult}

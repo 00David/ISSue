@@ -1,13 +1,13 @@
-package ressources
+package resources
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -84,18 +84,18 @@ func DeleteISSPosition(db *mongo.Database, ctx context.Context, date time.Time) 
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/ressources/iss[/dd-mm-yyyy]" handler
+// "/api/resources/iss[/dd-mm-yyyy]" handler
 func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// gets the potential date parameter
-		dateStr := strings.TrimPrefix(r.URL.Path, "/api/ressources/iss/")
+		dateStr := utility.GetSuffixParams("/api/resources/iss/", r)
 
 		if dateStr == "" {
-			fmt.Println("Request received on '/api/ressources/iss'")
+			fmt.Println("Request received on '/api/resources/iss'")
 			ISShandlerWithoutDate(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/ressources/iss/date'")
+			fmt.Println("Request received on '/api/resources/iss/date'")
 
 			// Checks if the parameter is a date
 			date, err := time.Parse(time.RFC3339, dateStr)
@@ -112,7 +112,7 @@ func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/ressources/iss" handler
+// "/api/resources/iss" handler
 func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost: // POST
@@ -146,7 +146,7 @@ func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Re
 	}
 }
 
-// "/api/ressources/iss/dd-mm-yyyy" handler
+// "/api/resources/iss/dd-mm-yyyy" handler
 func ISShandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
 	switch r.Method {
 	case http.MethodGet: // GET
