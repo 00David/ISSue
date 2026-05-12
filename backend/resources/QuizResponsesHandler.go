@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -30,7 +31,7 @@ func GetQuizResponses(db *mongo.Database, ctx context.Context, id int32) (QuizRe
 
 // Creates a QuizResponses in DB, returns its new id
 func CreateQuizResponses(db *mongo.Database, ctx context.Context,
-	idQuiz int32, idUser int32, responses []Response, note int32, comment string) (int32, error) {
+	idQuiz int32, idUser int32, responses []Response, responseDate time.Time, note int32, comment string) (int32, error) {
 	collection := db.Collection(collectionNameQuizR)
 
 	id, err := createUniqueId(collection, ctx, "idQuizResponses")
@@ -42,6 +43,7 @@ func CreateQuizResponses(db *mongo.Database, ctx context.Context,
 		IdQuiz:          idQuiz,
 		IdUser:          idUser,
 		Responses:       responses,
+		ResponseDate:    responseDate,
 		Note:            note,
 		Comment:         comment,
 	}
@@ -167,7 +169,7 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 		}
 
 		// Creation of the QuizResponses in DB
-		idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, req.Note, req.Comment)
+		idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, time.Now().UTC(), req.Note, req.Comment)
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return

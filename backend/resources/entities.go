@@ -47,6 +47,7 @@ type QuizResponses struct {
 	IdQuiz          int32      `json:"idQuiz" bson:"idQuiz"`                   // "Quiz" id, giving the quiz to which it had responded
 	IdUser          int32      `json:"idUser" bson:"idUser"`                   // "User" id, giving the user that has responded
 	Responses       []Response `json:"responses" bson:"responses"`             // quiz responses. For an index i, the corresponding question within the "Quiz" questions has the same index
+	ResponseDate    time.Time  `json:"responseDate" bson:"responseDate"`       // quiz response date
 	Note            int32      `json:"note" bson:"note"`                       // a note given by the user to the quiz, from 1 to 5 (both inclusive)
 	Comment         string     `json:"comment" bson:"comment"`                 // a comment given by the user on the quiz
 }
@@ -60,11 +61,12 @@ type Response struct {
 
 // A user registered on the application
 type User struct {
-	IdUser           int32   `json:"idUser" bson:"idUser"`                     // user id, unique for every user
-	Username         string  `json:"username" bson:"username"`                 // username, unique for every user
-	Email            string  `json:"email" bson:"email"`                       // user email, in case of password reseting, unique for every user
-	Password         string  `json:"password" bson:"password"`                 // user HASHED password
-	RespondedQuizzes []int32 `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user responded "Quiz"
+	IdUser           int32     `json:"idUser" bson:"idUser"`                     // user id, unique for every user
+	Username         string    `json:"username" bson:"username"`                 // username, unique for every user
+	Email            string    `json:"email" bson:"email"`                       // user email, in case of password reseting, unique for every user
+	Password         string    `json:"password" bson:"password"`                 // user HASHED password
+	SubscribeDate    time.Time `json:"subscribeDate" bson:"subscribeDate"`       // user subscribe date
+	RespondedQuizzes []int32   `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user responded "Quiz"
 }
 
 // ============================================================
@@ -73,17 +75,19 @@ type User struct {
 
 // Public informations of a user
 type PublicUser struct {
-	IdUser           int32   `json:"idUser"`
-	Username         string  `json:"username"`
-	RespondedQuizzes []int32 `json:"respondedQuizzes"`
+	IdUser           int32     `json:"idUser"`
+	Username         string    `json:"username"`
+	SubscribeDate    time.Time `json:"subscribeDate"`
+	RespondedQuizzes []int32   `json:"respondedQuizzes"`
 }
 
 // Private informations of a user
 type PrivateUser struct {
-	IdUser           int32   `json:"idUser"`
-	Username         string  `json:"username"`
-	Email            string  `json:"email"`
-	RespondedQuizzes []int32 `json:"respondedQuizzes"`
+	IdUser           int32     `json:"idUser"`
+	Username         string    `json:"username"`
+	Email            string    `json:"email"`
+	SubscribeDate    time.Time `json:"subscribeDate"`
+	RespondedQuizzes []int32   `json:"respondedQuizzes"`
 }
 
 // Get the public structure representing a User
@@ -91,6 +95,7 @@ func toPublicUser(u User) PublicUser {
 	return PublicUser{
 		IdUser:           u.IdUser,
 		Username:         u.Username,
+		SubscribeDate:    u.SubscribeDate,
 		RespondedQuizzes: u.RespondedQuizzes,
 	}
 }
@@ -101,6 +106,7 @@ func toPrivateUser(u User) PrivateUser {
 		IdUser:           u.IdUser,
 		Username:         u.Username,
 		Email:            u.Email,
+		SubscribeDate:    u.SubscribeDate,
 		RespondedQuizzes: u.RespondedQuizzes,
 	}
 }

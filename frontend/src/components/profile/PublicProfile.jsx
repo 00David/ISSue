@@ -1,4 +1,4 @@
-import { Star, Trophy, Calendar, User } from "lucide-react";
+import { Star, Rocket, Trophy, Calendar, User } from "lucide-react";
 
 function PublicProfile({ user, quizResponses }) {
     
@@ -14,7 +14,7 @@ function PublicProfile({ user, quizResponses }) {
         ? (quizResponses.reduce((acc, q) => acc + (q.note || 0), 0) / quizResponses.length).toFixed(1)
         : 0;
 
-    const joinDate = new Date();
+    const joinDate = new Date(user.subscribeDate);
     const formattedJoinDate = joinDate.toLocaleDateString("en-US", { 
         month: "long", 
         year: "numeric" 
@@ -48,36 +48,33 @@ function PublicProfile({ user, quizResponses }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Total Quizzes */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                             <Trophy className="w-5 h-5 text-blue-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Quizzes Completed</h3>
+                        <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
                     </div>
-                    <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
                 </div>
 
                 {/* Average Score */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                            <Star className="w-5 h-5 text-green-400" />
+                            <Rocket className="w-5 h-5 text-green-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Score</h3>
+                        <p className="text-3xl font-bold text-white">{averageScore}/10</p>
                     </div>
-                    <p className="text-3xl font-bold text-white">{averageScore}/10</p>
                 </div>
 
-                {/* Average Rating */}
+                {/* Average Note */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                             <Star className="w-5 h-5 text-yellow-400" />
                         </div>
-                        <h3 className="text-gray-400 text-sm font-medium">Average Rating</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <p className="text-3xl font-bold text-white">{averageNote}</p>
+                        <h3 className="text-gray-400 text-sm font-medium">Average Note</h3>
                         <div className="flex">
                             {Array.from({ length: 5 }, (_, i) => (
                                 <Star
@@ -88,6 +85,7 @@ function PublicProfile({ user, quizResponses }) {
                                 />
                             ))}
                         </div>
+                        <p className="text-3xl font-bold text-white">{averageNote}</p>
                     </div>
                 </div>
             </div>
@@ -102,7 +100,7 @@ function PublicProfile({ user, quizResponses }) {
                     <div className="space-y-3">
                         {quizResponses.slice(0, 5).map((quizResponse, index) => {
                             const score = quizResponse.responses.filter(r => r.correct).length;
-                            const date = quizResponse.date ? new Date(quizResponse.date) : null;
+                            const date = new Date(quizResponse.responseDate);
                             const formattedDate = date
                                 ? date.toLocaleDateString("en-US", {
                                     month: "short",

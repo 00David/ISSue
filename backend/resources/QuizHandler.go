@@ -140,7 +140,7 @@ func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.
 		defer r.Body.Close()
 
 		// Creation of the Quiz in DB
-		id, err := CreateQuiz(db, r.Context(), req.Date, req.Questions, req.Country, req.Region, req.CountryCode, req.Ocean)
+		id, err := CreateQuiz(db, r.Context(), time.Now().UTC(), req.Questions, req.Country, req.Region, req.CountryCode, req.Ocean)
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return

@@ -91,7 +91,17 @@ function Signup({ connected, setConnected }) {
 
                 <button
                     type="submit"
-                    className="py-2 mt-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition"
+                    className="
+                        text-white
+                        bg-[#4a7ba7]
+                        hover:bg-[#304d73]
+                        mt-4
+                        rounded-xl
+                        px-4
+                        py-3
+                        font-semibold
+                        shadow-lg
+                        cursor-pointer"
                 >
                     Sign up
                 </button>

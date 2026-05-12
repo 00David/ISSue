@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Star, X } from 'lucide-react';
 
-function CompletedQuizPopup({connected, postResponse,
-    showPopup, setShowPopup, 
-    score, note, setNote,
-    comment, setComment}) {
+function CompletedQuizPopup({connected, postResponse, showPopup, setShowPopup, 
+    score, note, setNote, comment, setComment}) {
+    const navigate = useNavigate();
 
     // Some comments...
     const boss = ["Perfect score.", "You crushed it.", "Absolutely flawless.", "Top-tier performance.", "Mastered completely."];
@@ -31,9 +31,9 @@ function CompletedQuizPopup({connected, postResponse,
         }
     }
 
-    function checkBeforePost(){
+    function responsePostHandler(){
         if (connected === -1) {
-            alert("Need to be connected to post");
+            navigate("/login"); // if not connected, redirect to login
         } else {
             postResponse();
         }
@@ -87,24 +87,23 @@ function CompletedQuizPopup({connected, postResponse,
 
             {/* Post response */}
             <button
-                onClick={() => checkBeforePost()}
+                onClick={() => responsePostHandler()}
                 className="
-                    mt-4
-                    w-full
-                    rounded-xl
+                    text-white
+                    hover:bg-[#304d73]
                     bg-[#4a7ba7]
+                    w-full
+                    active:scale-[0.98]
+                    mt-4
+                    rounded-xl
                     px-4
                     py-3
                     font-semibold
-                    text-white
                     shadow-lg
                     transition-all
                     duration-200
-                    hover:bg-[#304d73]
                     hover:scale-[1.02]
-                    active:scale-[0.98]
-                    disabled:opacity-50
-                    disabled:cursor-not-allowed
+                    cursor-pointer
                 "
             >
                 Post quiz response !

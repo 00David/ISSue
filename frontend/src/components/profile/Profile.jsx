@@ -120,7 +120,7 @@ function Profile({connected, setConnected}) {
         return (
             <div id="Profile-display" className="flex flex-col items-center justify-center min-h-[60vh]">
                 <Spinner />
-                <p className="text-gray-400 mt-4">Loading profile...</p>
+                <p className="text-center">Loading profile...</p>
             </div>
         );
     }

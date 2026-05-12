@@ -7,9 +7,8 @@ import Spinner from '../utility/Spinner.jsx';
 import Question from '../home/Question.jsx'
 import CompletedQuizPopup from '../popup/CompletedQuizPopup.jsx'
 
-function TodoQuiz({connected, quiz, 
-    selectedCached, noteCached, commentCached, 
-    showResultsCached, onReload}) {
+function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, showResultsCached, 
+    onReload, isHome}) {
 
     // for each case (= a question) : -1 if no selection, 0, 1, 2, or 3 if selected
     // (index of the response among answers)
@@ -18,6 +17,7 @@ function TodoQuiz({connected, quiz,
     const [comment, setComment] = useState(commentCached);
 
     const [showResults, setShowResults] = useState(showResultsCached);
+    const [showValidateWarning, setShowValidateWarning] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
 
     const [finalScore, setFinalScore] = useState(0);
@@ -34,8 +34,13 @@ function TodoQuiz({connected, quiz,
             showResults,
             expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes,
         };
-        localStorage.setItem("home-quiz-cache", JSON.stringify(cache));
-    }, [quiz, showResults, selected, note, comment]);
+
+        if (isHome) {
+            localStorage.setItem("quiz-home-cache", JSON.stringify(cache));
+        } else {
+            localStorage.setItem("quiz"+quiz.idQuiz+"-cache", JSON.stringify(cache));
+        }
+    }, [quiz, showResults, selected, note, comment, isHome]);
 
     async function postResponses() {
         if (connected == -1) return;
@@ -58,8 +63,12 @@ function TodoQuiz({connected, quiz,
             await axios.post("/api/resources/quiz-responses",
                 payload
             );
-            // Home quiz cache cleaned
-            localStorage.removeItem("home-quiz-cache");
+            // Quiz cache cleaned
+            if (isHome) {
+                localStorage.removeItem("quiz-home-cache");
+            } else {
+                localStorage.removeItem("quiz"+quiz.idQuiz+"-cache");
+            }
             setShowPopup(false);
             onReload();
         } catch (error) {
@@ -71,10 +80,12 @@ function TodoQuiz({connected, quiz,
         return selected.reduce((acc, select) => (select != -1) ? acc+1 : acc, 0); 
     }
 
-    function validate(){
-        const isEverythingSelected = selected.reduce((acc, select) => acc && (select != -1), true);
+    function isEverythingSelected(){
+        return nbSelected() == quiz.questions.length; 
+    }
 
-        if (isEverythingSelected){
+    function handleValidate(){
+        if (isEverythingSelected()){
             const totalScore = selected.reduce((acc, answerIndex, i) => {
                 if (answerIndex === -1) return acc;
                 const correctIndex = quiz.questions[i].indexResponse;
@@ -83,9 +94,11 @@ function TodoQuiz({connected, quiz,
             setFinalScore(totalScore);
             setShowResults(true);
             setShowPopup(true)
-
         } else{
-            alert("Need to select everything");
+            setShowValidateWarning(true);
+            setTimeout(() => {
+                setShowValidateWarning(false);
+            }, 3000);
         }
     }
 
@@ -106,33 +119,74 @@ function TodoQuiz({connected, quiz,
             
             <ProgressBar className="sticky top-12 z-1000" now={nbSelected()*10} />
             
+            {/* Quiz infos header */}
             <div id="Home-quiz-header" className="flex flex-col justify-center items-center self-center">
                 <h3 className="text-center">{formattedQuizDate} quiz is about ...</h3>
+
                 {!quiz.ocean && <ReactCountryFlag 
                     countryCode={quiz.countryCode}
                     className = "w-[30%] h-[30%]"
                     title="US" svg  />}
+
                 <h2 className="text-center">{quiz.country} !</h2>
                 {quiz.region && <h3 className="text-center">and its "{quiz.region}" region !</h3>} 
             </div>
 
+            {/* Questions */}
             <div id="Home-quiz-questions">
                     {quiz.questions.map((question, index) => {
                          return (
-                            <Question key={index} question={question} showResult={showResults} 
+                            <Question 
+                            key={index} 
+                            question={question} 
+                            showResult={showResults} 
                             selected={selected}
                             setSelected={ (selected) => setArraySelected(index, selected)} />
                          );
                     })}
             </div>
-
+            
+            {/* Validate button */}
             <button 
-                className="quiz-button"
-                onClick={ () => validate()}
-                >
+                className="
+                    relative
+                    group w-max
+                    text-white
+                    bg-[#4a7ba7]
+                    hover:bg-[#304d73]
+                    active:scale-[0.98]
+                    mt-4
+                    rounded-xl
+                    px-4
+                    py-3
+                    font-semibold
+                    shadow-lg
+                    transition-all
+                    duration-200
+                    hover:scale-[1.10]
+                    cursor-pointer
+                    "
+                onClick={ () => handleValidate()}
+            >
                 Validate
+
+                {/* Validate warning if not all responded */}
+                {
+                    showValidateWarning ? (
+                    <span
+                    className="
+                        absolute inset-0
+                        flex items-center justify-center
+                        bg-gray-800 text-white text-sm rounded-xl
+                    "
+                    >
+                    Need to select all responses
+                    </span>
+                    ) : null
+                }
             </button>
             
+            {/* Complteted quiz popup, when validated */}
             {showResults ? (
                 <CompletedQuizPopup
                     connected={connected}

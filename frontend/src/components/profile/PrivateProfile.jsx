@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2 } from "lucide-react";
+import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2 } from "lucide-react";
 
 function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount}) {
     
@@ -101,14 +101,14 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <>
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-[#4a7ba7] hover:bg-[#304d73] text-white rounded-lg transition-colors cursor-pointer"
                                 >
                                     <Edit2 className="w-4 h-4" />
                                     Edit Profile
                                 </button>
                                 <button
                                     onClick={onLogout}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors cursor-pointer"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Logout
@@ -118,7 +118,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <>
                                 <button
                                     onClick={handleSaveChanges}
-                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-800 text-white rounded-lg transition-colors cursor-pointer"
                                 >
                                     Save Changes
                                 </button>
@@ -130,7 +130,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                         setNewPassword("");
                                         setConfirmPassword("");
                                     }}
-                                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -194,36 +194,33 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Total Quizzes */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                             <Trophy className="w-5 h-5 text-blue-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Quizzes Completed</h3>
+                        <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
                     </div>
-                    <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
                 </div>
 
                 {/* Average Score */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                            <Star className="w-5 h-5 text-green-400" />
+                            <Rocket className="w-5 h-5 text-green-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Score</h3>
+                        <p className="text-3xl font-bold text-white">{averageScore}/10</p>
                     </div>
-                    <p className="text-3xl font-bold text-white">{averageScore}/10</p>
                 </div>
 
-                {/* Average Rating */}
+                {/* Average Note */}
                 <div className="bg-midissue rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                             <Star className="w-5 h-5 text-yellow-400" />
                         </div>
-                        <h3 className="text-gray-400 text-sm font-medium">Average Rating</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <p className="text-3xl font-bold text-white">{averageNote}</p>
+                        <h3 className="text-gray-400 text-sm font-medium">Average Note</h3>
                         <div className="flex">
                             {Array.from({ length: 5 }, (_, i) => (
                                 <Star
@@ -234,6 +231,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                 />
                             ))}
                         </div>
+                        <p className="text-3xl font-bold text-white">{averageNote}</p>
                     </div>
                 </div>
             </div>
@@ -248,7 +246,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                     <div className="space-y-3">
                         {quizResponses.slice(0, 5).map((quizResponse, index) => {
                             const score = quizResponse.responses.filter(r => r.correct).length;
-                            const date = quizResponse.date ? new Date(quizResponse.date) : null;
+                            const date = new Date(quizResponse.responseDate);
                             const formattedDate = date
                                 ? date.toLocaleDateString("en-US", {
                                     month: "short",
@@ -306,7 +304,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                 {!showDeleteConfirm ? (
                     <button
                         onClick={handleDeleteAccount}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer"
                     >
                         <Trash2 className="w-4 h-4" />
                         Delete Account
@@ -317,13 +315,13 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                         <div className="flex gap-2">
                             <button
                                 onClick={handleDeleteAccount}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors cursor-pointer"
                             >
                                 Yes, delete my account
                             </button>
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>

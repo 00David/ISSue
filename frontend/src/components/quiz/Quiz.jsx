@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from "react-router-dom";
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
 import axios from 'axios';
@@ -10,6 +11,9 @@ import RespondedQuiz from './RespondedQuiz.jsx'
 import TodoQuiz from './TodoQuiz.jsx'
 
 function Quiz({connected}) {
+    const location = useLocation();
+    const isHome = location.pathname === "/";
+    const urlIdQuiz = location.pathname.split("/").pop(); // not present if at home
     
     const [quiz, setQuiz] = useState(null);
     const [quizResponses, setQuizResponses] = useState(null);
@@ -26,7 +30,8 @@ function Quiz({connected}) {
     useEffect(() => {
         const getTodayQuiz = async () => {
             // Try to get the quiz from the cache
-            const cached = localStorage.getItem("home-quiz-cache");
+            const cached = isHome ? localStorage.getItem("quiz-home-cache") : localStorage.getItem("quiz"+urlIdQuiz+"-cache");
+
             if (cached) {
                 const parsed = JSON.parse(cached);
                 const currentDate = new Date().toDateString();
@@ -37,7 +42,11 @@ function Quiz({connected}) {
 
                 // Remove the cached quiz data if too old, or from a different date
                 if (cacheExpired || isDifferentQuiz) {
-                    localStorage.removeItem("home-quiz-cache");
+                    if (isHome) {
+                        localStorage.removeItem("quiz-home-cache");
+                    } else {
+                        localStorage.removeItem("quiz"+quiz.idQuiz+"-cache");
+                    }
                 } else {
                     setQuiz(parsed.quiz);
                     setSelectedCached(parsed.selected);
@@ -59,7 +68,7 @@ function Quiz({connected}) {
             }
         };
         getTodayQuiz();
-    }, []);
+    }, [isHome]);
 
     useEffect(() => {
         const fetchQuizResponses = async () => {
@@ -93,6 +102,7 @@ function Quiz({connected}) {
         setLoading(true);
     }
 
+    {/* Spinner while loading */}
     if (loading) {
         return <div id="Home-quiz-display" className="flex flex-col gap-4 justify-center 
                     items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto">
@@ -101,6 +111,7 @@ function Quiz({connected}) {
                 </div>
     }
 
+    {/* No quiz available */}
     if (!quiz) {
         return <div id="Home-quiz-display" className="flex flex-col gap-4 justify-center 
                     items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto">
@@ -108,6 +119,7 @@ function Quiz({connected}) {
                 </div>;
     }
 
+    {/* Displays either RespondedQuiz or TodoQuiz component, if the user has already responded to that quiz or not */}
     return (
         hasResponded ? (
             <RespondedQuiz 
@@ -123,6 +135,7 @@ function Quiz({connected}) {
                 commentCached={commentCached}
                 showResultsCached={showResultsCached}
                 onReload={onReload}
+                isHome={isHome}
             />
         )
     );
