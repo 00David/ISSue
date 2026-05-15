@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from "react-router-dom";
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
 import axios from 'axios';
 
 import Spinner from '../utility/Spinner.jsx';
-import Question from '../home/Question.jsx'
+import Question from './Question.jsx'
 import CompletedQuizPopup from '../popup/CompletedQuizPopup.jsx'
 import RespondedQuiz from './RespondedQuiz.jsx'
 import TodoQuiz from './TodoQuiz.jsx'
+import QuizComments from './QuizComments.jsx'
 
-function Quiz({connected}) {
-    const location = useLocation();
-    const isHome = location.pathname === "/";
-    const urlIdQuiz = location.pathname.split("/").pop(); // not present if at home
+function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInfo}) {
+    const isHome = idQuiz == -1;
     
     const [quiz, setQuiz] = useState(null);
     const [quizResponses, setQuizResponses] = useState(null);
@@ -28,9 +26,9 @@ function Quiz({connected}) {
     const [hasResponded, setHasResponded] = useState(false);
 
     useEffect(() => {
-        const getTodayQuiz = async () => {
+        const getQuiz = async () => {
             // Try to get the quiz from the cache
-            const cached = isHome ? localStorage.getItem("quiz-home-cache") : localStorage.getItem("quiz"+urlIdQuiz+"-cache");
+            const cached = isHome ? localStorage.getItem("quiz-home-cache") : localStorage.getItem("quiz"+idQuiz+"-cache");
 
             if (cached) {
                 const parsed = JSON.parse(cached);
@@ -38,14 +36,14 @@ function Quiz({connected}) {
                 const cachedQuizDate = new Date(parsed.quiz.date).toDateString();
 
                 const cacheExpired = Date.now() > parsed.expiresAt;
-                const isDifferentQuiz = currentDate !== cachedQuizDate;
+                const isDifferentQuiz = (currentDate != cachedQuizDate) && (idQuiz != parsed.quiz.idQuiz);
 
                 // Remove the cached quiz data if too old, or from a different date
                 if (cacheExpired || isDifferentQuiz) {
                     if (isHome) {
                         localStorage.removeItem("quiz-home-cache");
                     } else {
-                        localStorage.removeItem("quiz"+quiz.idQuiz+"-cache");
+                        localStorage.removeItem("quiz"+parsed.quiz.idQuiz+"-cache");
                     }
                 } else {
                     setQuiz(parsed.quiz);
@@ -53,6 +51,7 @@ function Quiz({connected}) {
                     setNoteCached(parsed.note);
                     setCommentCached(parsed.comment);
                     setShowResultsCached(parsed.showResults);
+                    if (setQuizDate != null) setQuizDate(parsed.quiz.date);
                     return;
                 }
             }
@@ -60,25 +59,29 @@ function Quiz({connected}) {
             // If not in cache, fetch the quiz
             try {
                 const todayDate = new Date().toISOString();
-                const quizFetched = await axios.get('/api/resources/quizzes/'+encodeURIComponent(todayDate));
+                const parameter = isHome ? encodeURIComponent(todayDate) : idQuiz;
+                const quizFetched = await axios.get("/api/resources/quizzes/"+parameter);
+
                 setQuiz(quizFetched.data);
                 setSelectedCached(Array(quizFetched.data.questions.length).fill(-1));
+                if (setQuizDate != null) setQuizDate(quizFetched.data.date);
             } catch (error) {
                 console.error("Error while fetching today quiz:\n", error.response.data);
+                if (setNotFound != null) setNotFound(true);
             }
         };
-        getTodayQuiz();
-    }, [isHome]);
+        getQuiz();
+    }, [isHome, idQuiz, setQuizDate, setNotFound]);
 
     useEffect(() => {
         const fetchQuizResponses = async () => {
             try {
-                if (connected === -1 || !quiz) return;
+                if (connectedId == -1 || !quiz) return;
             
                 const fetchedQuizResp = await axios.get(
                     "/api/resources/quiz-responses?" +
                     "idquiz=" + quiz.idQuiz +
-                    "&iduser=" + connected
+                    "&iduser=" + connectedId
                 );
 
                 if (fetchedQuizResp.data) {
@@ -88,7 +91,7 @@ function Quiz({connected}) {
 
             } catch (error) {
                 // 404 = quiz not yet responded
-                if (error.response?.status !== 404) {
+                if (error.response?.status != 404) {
                     console.error("Error while fetching quiz responses:\n", error.response.data);
                 }
             } finally {
@@ -96,9 +99,9 @@ function Quiz({connected}) {
             }
         };
         fetchQuizResponses();
-    }, [quiz, connected, loading]);
+    }, [quiz, connectedId, loading]);
 
-    function onReload() {
+    const onReload = () => {
         setLoading(true);
     }
 
@@ -121,23 +124,30 @@ function Quiz({connected}) {
 
     {/* Displays either RespondedQuiz or TodoQuiz component, if the user has already responded to that quiz or not */}
     return (
-        hasResponded ? (
-            <RespondedQuiz 
-                quiz={quiz} 
-                quizResponses={quizResponses}
-            />
-        ) : (
-            <TodoQuiz 
-                connected={connected} 
-                quiz={quiz} 
-                selectedCached={selectedCached}
-                noteCached={noteCached}
-                commentCached={commentCached}
-                showResultsCached={showResultsCached}
-                onReload={onReload}
-                isHome={isHome}
-            />
-        )
+        <>
+            {hasResponded ? (
+                <RespondedQuiz 
+                    quiz={quiz} 
+                    quizResponses={quizResponses}
+                />
+            ) : (
+                <TodoQuiz 
+                    connectedId={connectedId} 
+                    quiz={quiz} 
+                    selectedCached={selectedCached}
+                    noteCached={noteCached}
+                    commentCached={commentCached}
+                    showResultsCached={showResultsCached}
+                    onReload={onReload}
+                    isHome={isHome}
+                    showError={showError} 
+                    showInfo={showInfo}
+                />
+            )}
+
+            {/* Quiz comments */}
+            <QuizComments idQuiz={quiz.idQuiz} />
+        </>
     );
 }
 

@@ -24,13 +24,14 @@ type ISSPosition struct {
 
 // A quiz
 type Quiz struct {
-	IdQuiz      int32      `json:"idQuiz" bson:"idQuiz"`           // quiz id, unique for every quiz
-	Date        time.Time  `json:"date" bson:"date"`               // quiz date. (day-month-year unique for every Quiz)
-	Questions   []Question `json:"questions" bson:"questions"`     // quiz questions
-	Country     string     `json:"country" bson:"country"`         // the main topic of the quiz
-	CountryCode string     `json:"countryCode" bson:"countryCode"` // the country code, ISO alpha-2 format
-	Region      string     `json:"region" bson:"region"`           // the secondary topic of the quiz
-	Ocean       bool       `json:"ocean" bson:"ocean"`             // indicates if an ocean is targeted
+	IdQuiz           int32      `json:"idQuiz" bson:"idQuiz"`                     // quiz id, unique for every quiz
+	Date             time.Time  `json:"date" bson:"date"`                         // quiz date. (day-month-year unique for every Quiz)
+	Questions        []Question `json:"questions" bson:"questions"`               // quiz questions
+	Country          string     `json:"country" bson:"country"`                   // the main topic of the quiz
+	CountryCode      string     `json:"countryCode" bson:"countryCode"`           // the country code, ISO alpha-2 format
+	Region           string     `json:"region" bson:"region"`                     // the secondary topic of the quiz
+	Ocean            bool       `json:"ocean" bson:"ocean"`                       // indicates if an ocean is targeted
+	RespondedQuizzes []int32    `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user answers to this quiz (QuizResponses)
 }
 
 // A quiz question
@@ -66,7 +67,7 @@ type User struct {
 	Email            string    `json:"email" bson:"email"`                       // user email, in case of password reseting, unique for every user
 	Password         string    `json:"password" bson:"password"`                 // user HASHED password
 	SubscribeDate    time.Time `json:"subscribeDate" bson:"subscribeDate"`       // user subscribe date
-	RespondedQuizzes []int32   `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of user responded "Quiz"
+	RespondedQuizzes []int32   `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of this user answers to quizzes (QuizResponses)
 }
 
 // ============================================================
@@ -109,6 +110,18 @@ func toPrivateUser(u User) PrivateUser {
 		SubscribeDate:    u.SubscribeDate,
 		RespondedQuizzes: u.RespondedQuizzes,
 	}
+}
+
+// ============================================================
+// ============== ON QUIZ COMMENTS GET METHOD =================
+// ============================================================
+
+type Comment struct {
+	IdUser   int32     `json:"idUser"`
+	Username string    `json:"username"`
+	Date     time.Time `json:"date"`
+	Note     int32     `json:"note"`
+	Comment  string    `json:"comment"`
 }
 
 // ============================================================

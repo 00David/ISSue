@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 import ISSPosition from './ISSPosition.jsx'
 import Quiz from '../quiz/Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
-function Home({connected, setConnected}) {
+function Home({connectedId, showError, showInfo}) {
 
     useEffect(() => {
         document.title = "ISSue - Home";
@@ -20,7 +19,7 @@ function Home({connected, setConnected}) {
 
             <div id="Home-center" className="justify-center items-center space-y-10">
                 <ISSPosition canShowCurrentPosition={true} ISSQuizDate={todayDate} />
-                <Quiz connected={connected} />
+                <Quiz connectedId={connectedId} idQuiz={-1} setQuizDate={null} setNotFound={null} showError={showError} showInfo={showInfo}/>
             </div>
 
             <aside id="Home-right">

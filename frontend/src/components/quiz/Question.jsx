@@ -6,22 +6,22 @@ function Question({question, showResult, selected, setSelected}) {
 
     const [selectedIndex, setSelectedIndex] = useState(selected[question.numQuestion]); // local index of an answer, 0-3
 
-    function getButtonClass(index) {
+    const getButtonClass = (index) => {
         if (showResult) {
-            if (index === question.indexResponse) {
+            if (index == question.indexResponse) {
                 return "correct-response";
             }
-            if (index === selectedIndex) {
+            if (index == selectedIndex) {
                 return "bad-response";
             }
             return "";
         }
 
-        return index === selectedIndex ? "selected-response" : "";
+        return index == selectedIndex ? "selected-response" : "";
     }
 
-    function clickAnswerHandler(index) {
-        if (selectedIndex === index) { // unselect answer if already selected and clicked
+    const clickAnswerHandler = (index) => {
+        if (selectedIndex == index) { // unselect answer if already selected and clicked
             setSelectedIndex(-1);
             setSelected(-1); // Give the info to the Quiz component
             return;

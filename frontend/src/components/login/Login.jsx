@@ -2,45 +2,42 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-function Login({connected, setConnected}) {
+function Login({connectedId, setConnected, showError}) {
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
 
     useEffect(() => {
         document.title = "ISSue - Login";
-        if (connected !== -1) { // User redirected on its profile page if connected
-            navigate("/profile/"+connected); 
+        if (connectedId !== -1) { // User redirected on its profile page if connected
+            navigate("/profile/"+connectedId); 
         }
-    }, [connected, navigate]);
+    }, [connectedId, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
 
         try {
             // Login
             await axios.post('/api/authentification/login', {
                 username,
                 password
-            }, {
-                withCredentials: true
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get('/api/authentification/me', {
-                withCredentials: true
+            const res = await axios.get('/api/authentification/me');
+            setConnected({ // triggers a redirection to the user profile page (via local useEffect)
+                id: res.data.id,
+                username: username
             });
-            setConnected(res.data.id); // triggers a redirection to the user profile page (via local useEffect)
 
         } catch (err) {
-            if (err.response?.status === 401 || err.response?.status === 404) {
-                setError("Invalid username or password");
+            if (err.response?.status == 401 || err.response?.status == 404) {
+                showError("Invalid username or password");
             } else {
                 console.error("Error while loging in :\n"+err.response?.data);
-                setError("Server error");
+                showError("Server error");
             }
         }
     };
@@ -88,10 +85,6 @@ function Login({connected, setConnected}) {
                 >
                     Login
                 </button>
-
-                {error && (
-                    <p className="text-red-500 text-sm text-center">{error}</p>
-                )}
 
                 <p className="text-sm text-center mt-2">
                     Don't have an account?{" "}

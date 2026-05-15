@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/00David/ISSue/backend/utility"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // ============================================================
@@ -49,7 +51,7 @@ func GetUserWithInfo(db *mongo.Database, ctx context.Context,
 
 // Creates a User in DB, returns its new id
 func CreateUser(db *mongo.Database, ctx context.Context,
-	username string, email string, password string) (int32, error) {
+	username string, email string, password string, subscribeDate time.Time) (int32, error) {
 	collection := db.Collection(collectionNameUsers)
 
 	id, err := createUniqueId(collection, ctx, "idUser")
@@ -61,6 +63,7 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 		Username:         username,
 		Email:            email,
 		Password:         password,
+		SubscribeDate:    subscribeDate,
 		RespondedQuizzes: make([]int32, 0),
 	}
 	_, err = collection.InsertOne(ctx, user)
@@ -85,13 +88,13 @@ func UpdateUserInfo(db *mongo.Database, ctx context.Context,
 	if fieldToModify == "username" {
 		_, err := GetUserWithInfo(db, ctx, "username", newFieldValue)
 		if err == nil {
-			return fmt.Errorf("A user already exists with the same username")
+			return utility.ErrExistantUsername
 		}
 	}
 	if fieldToModify == "email" {
 		_, err := GetUserWithInfo(db, ctx, "email", newFieldValue)
 		if err == nil {
-			return fmt.Errorf("A user already exists with the same email")
+			return utility.ErrExistantEmail
 		}
 	}
 
@@ -112,6 +115,22 @@ func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
 	update := bson.D{{Key: "$set",
 		Value: bson.D{{Key: "respondedQuizzes", Value: newRespondedQuizzes}},
 	}}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Updates a User responded quizzes indexes by adding a given new response index
+func AddUserRespondedQuiz(db *mongo.Database, ctx context.Context,
+	id int32, newRespondedQuizId int32) error {
+	collection := db.Collection(collectionNameUsers)
+
+	filter := bson.D{{Key: "idUser", Value: id}}
+	update := bson.D{
+		{Key: "$push", Value: bson.D{
+			{Key: "respondedQuizzes", Value: newRespondedQuizId},
+		}},
+	}
+
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
 }
@@ -168,7 +187,7 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 		defer r.Body.Close()
 
 		// Creation of the User in DB
-		id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password)
+		id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password, time.Now().UTC())
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
@@ -223,8 +242,52 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 			return
 		}
 
+		// Get the User in DB
+		user, err := GetUser(db, r.Context(), id)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No User for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Search for responses to quizzes : delete those responses and references to them
+		for _, idResponses := range user.RespondedQuizzes {
+
+			// First get the QuizResponses
+			responses, err := GetQuizResponses(db, r.Context(), idResponses)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Then delete this QuizResponses id from the Quiz it has responded
+			err = DeleteQuizRespondedQuiz(db, r.Context(), responses.IdQuiz, idResponses)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Finally, delete the QuizResponses
+			err = DeleteQuizResponses(db, r.Context(), idResponses)
+			if err != nil {
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		// Deletion of the User in DB
-		err := DeleteUser(db, r.Context(), id)
+		err = DeleteUser(db, r.Context(), id)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				http.Error(w, "No User for this id", http.StatusNotFound)
@@ -257,10 +320,14 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 
 		// Update of the User username in DB, if needed
 		if req.Username != "" {
-			err := UpdateUserInfo(db, r.Context(), id, "Username", req.Username)
+			err := UpdateUserInfo(db, r.Context(), id, "username", req.Username)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					http.Error(w, "No User for this id", http.StatusNotFound)
+					return
+				}
+				if err == utility.ErrExistantUsername {
+					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
@@ -269,10 +336,21 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		}
 		// Update of the User email in DB, if needed
 		if req.Email != "" {
-			err := UpdateUserInfo(db, r.Context(), id, "Email", req.Email)
+
+			// Email format verification
+			if !utility.IsValidEmail(req.Email) {
+				http.Error(w, "Incorrect email format", http.StatusBadRequest)
+				return
+			}
+
+			err := UpdateUserInfo(db, r.Context(), id, "email", req.Email)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					http.Error(w, "No User for this id", http.StatusNotFound)
+					return
+				}
+				if err == utility.ErrExistantEmail {
+					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
@@ -281,7 +359,18 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		}
 		// Update of the User password in DB, if needed
 		if req.Password != "" {
-			err := UpdateUserInfo(db, r.Context(), id, "Password", req.Password)
+
+			// The password is hashed, we're profesional here
+			hashedPassword, err := bcrypt.GenerateFromPassword(
+				[]byte(req.Password),
+				bcrypt.DefaultCost,
+			)
+			if err != nil {
+				http.Error(w, "Error hashing password", http.StatusInternalServerError)
+				return
+			}
+
+			err = UpdateUserInfo(db, r.Context(), id, "password", string(hashedPassword))
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					http.Error(w, "No User for this id", http.StatusNotFound)

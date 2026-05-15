@@ -3,11 +3,27 @@ package utility
 import (
 	"errors"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+)
+
+// Errors
+var (
+	// Resources
+	ErrExistantUsername = errors.New("A user already exists with the same username")
+	ErrExistantEmail    = errors.New("A user already exists with the same email")
+	// Cookie / JWT
+	ErrNoCookie      = errors.New("no JWT cookie found")
+	ErrInvalidToken  = errors.New("invalid token")
+	ErrInvalidClaims = errors.New("invalid token claims")
+	ErrMissingSub    = errors.New("missing sub claim")
+	ErrMissingName   = errors.New("missing name claim")
+	ErrInvalidSub    = errors.New("invalid sub format")
+	ErrInvalidName   = errors.New("invalid name format")
 )
 
 // Get the suffix parameters of a request URL (after the last "/")
@@ -25,13 +41,14 @@ func GetSuffixParams(prefix string, r *http.Request) string {
 }
 
 // Create both a JWT token and a cookie containing it, with 1 hour of expiration time
-func CreateTokenAndCookie(w http.ResponseWriter, jwtSecret []byte, idUser int32) error {
+func CreateTokenAndCookie(w http.ResponseWriter, jwtSecret []byte, idUser int32, username string) error {
 	expirationTime := time.Now().Add(1 * time.Hour)
 
 	// Create the JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": idUser,
-		"exp": expirationTime.Unix(),
+		"sub":  idUser,
+		"name": username,
+		"exp":  expirationTime.Unix(),
 	})
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
@@ -51,15 +68,6 @@ func CreateTokenAndCookie(w http.ResponseWriter, jwtSecret []byte, idUser int32)
 
 	return nil
 }
-
-// Errors
-var (
-	ErrNoCookie      = errors.New("no JWT cookie found")
-	ErrInvalidToken  = errors.New("invalid token")
-	ErrInvalidClaims = errors.New("invalid token claims")
-	ErrMissingSub    = errors.New("missing sub claim")
-	ErrInvalidSub    = errors.New("invalid sub format")
-)
 
 // Extracts and validates the user ID from JWT cookie
 func ExtractUserIDFromRequest(r *http.Request, jwtSecret []byte) (int32, error) {
@@ -111,6 +119,47 @@ func ExtractUserIDFromRequest(r *http.Request, jwtSecret []byte) (int32, error) 
 	return userID, nil
 }
 
+// Extracts and validates the username from JWT cookie
+func ExtractUsernameFromRequest(r *http.Request, jwtSecret []byte) (string, error) {
+	// Get JWT cookie
+	cookie, err := r.Cookie("JWT")
+	if err != nil {
+		return "", ErrNoCookie
+	}
+
+	// Parse and validate token
+	token, err := jwt.Parse(cookie.Value, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, ErrInvalidToken
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		return "", ErrInvalidToken
+	}
+
+	// Extract claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", ErrInvalidClaims
+	}
+
+	// Get username from name claim
+	rawName, ok := claims["name"]
+	if !ok {
+		return "", ErrMissingName
+	}
+
+	// Convert name to string
+	name, ok := rawName.(string)
+	if !ok {
+		return "", ErrInvalidName
+	}
+
+	return name, nil
+}
+
 // Retuns true if the user identified by the request token is the given expected user, otherwise false.
 func IsUserAuthorized(r *http.Request, jwtSecret []byte, expectedIdUser int32) bool {
 
@@ -120,4 +169,10 @@ func IsUserAuthorized(r *http.Request, jwtSecret []byte, expectedIdUser int32) b
 	}
 
 	return userId == expectedIdUser
+}
+
+// Retuns true if the given, supposed email, has the expected form. Otherwise false.
+func IsValidEmail(email string) bool {
+	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	return emailRegex.MatchString(email)
 }

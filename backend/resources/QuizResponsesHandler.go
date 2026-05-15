@@ -157,17 +157,6 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 			}
 		}
 
-		// Get the user in DB
-		user, err := GetUser(db, r.Context(), userID)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No User for this id", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		// Creation of the QuizResponses in DB
 		idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, time.Now().UTC(), req.Note, req.Comment)
 		if err != nil {
@@ -176,9 +165,14 @@ func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 		}
 
 		// Update user's responded quizzes ids
-		newRespondedQuizzes := append(user.RespondedQuizzes, idQuizR)
-		err = UpdateUserRespondedQuizzes(db, r.Context(), userID,
-			newRespondedQuizzes)
+		err = AddUserRespondedQuiz(db, r.Context(), userID, idQuizR)
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Update quiz responded quizzes ids
+		err = AddQuizRespondedQuiz(db, r.Context(), req.IdQuiz, idQuizR)
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return

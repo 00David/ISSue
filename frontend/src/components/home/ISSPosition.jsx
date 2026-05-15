@@ -9,16 +9,16 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
     const [ISSCurrentPosition,setISSCurrentPosition] = useState([0, 0]); // [latitude, longitude]
     const [ISSQuizPosition,setISSQuizPosition] = useState([0, 0]); // [latitude, longitude]
     const [currentIsSelected, setCurrentIsSelected] = useState(canShowCurrentPosition ? true : false); // true : current ISS position, false : quiz ISS position
-    const [loading, setLoading] = useState(canShowCurrentPosition ? true : false);
+    const [loading, setLoading] = useState(true);
     
     const [recenter, setRecenter] = useState(0); //  map recenter trigger
 
-    function switchToCurrent(){
+    const switchToCurrent = () => {
         setCurrentIsSelected(true);
         setRecenter(recenter+1)
     }
 
-    function switchToQuiz(){
+    const switchToQuiz = () => {
         setCurrentIsSelected(false);
         setRecenter(recenter+1)
     }
@@ -41,7 +41,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             }
 
             // QUIZ ISS (one shot, on first loading)
-            if (firstLoad) {
+            if (firstLoad && ISSQuizDate) {
                 try {
                     const response = await axios.get('/api/resources/iss/'+encodeURIComponent(ISSQuizDate));
                     const { latitude, longitude } = response.data;
@@ -84,7 +84,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
         </div>
     ) : (
         <div>
-            <h3 className={"text-center cursor-pointer "+currentISSLabelColor}>Quiz ISS position</h3>
+            <h3 className={"text-center cursor-pointer "+quizISSLabelColor}>Quiz ISS position</h3>
         </div>
     );
 

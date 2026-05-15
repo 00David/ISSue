@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-function Signup({ connected, setConnected }) {
+function Signup({connectedId, setConnected, showError}) {
 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -13,11 +13,10 @@ function Signup({ connected, setConnected }) {
 
     useEffect(() => {
         document.title = "ISSue - Sign up";
-
-        if (connected !== -1) {
-            navigate("/");
+        if (connectedId != -1) { // User redirected on its profile page if connected
+            navigate("/profile/"+connectedId); 
         }
-    }, [connected, navigate]);
+    }, [connectedId, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -29,27 +28,23 @@ function Signup({ connected, setConnected }) {
                 username,
                 email,
                 password
-            }, {
-                withCredentials: true
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get('/api/authentification/me', {
-                withCredentials: true
+            const res = await axios.get('/api/authentification/me');
+            setConnected({ // triggers a redirection to the user profile page (via local useEffect)
+                id: res.data.id,
+                username: username
             });
-            setConnected(res.data.id);
-
-            // User redirected on its profile page
-            navigate("/profile/" + res.data.id);
 
         } catch (err) {
-            if (err.response?.status === 400) {
-                setError("Invalid data");
-            } else if (err.response?.status === 409) {
-                setError("Username or email already taken");
+            if (err.response?.status == 400) {
+                showError("Invalid data");
+            } else if (err.response?.status == 409) {
+                showError("Username or email already taken");
             } else {
                 console.error("Error while signing up :\n"+err.response?.data);
-                setError("Server error");
+                showError("Server error");
             }
         }
     };

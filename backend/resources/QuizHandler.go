@@ -65,16 +65,68 @@ func CreateQuiz(db *mongo.Database, ctx context.Context,
 	}
 
 	quiz := Quiz{
-		IdQuiz:      id,
-		Date:        date,
-		Questions:   questions,
-		Country:     country,
-		CountryCode: countryCode,
-		Region:      region,
-		Ocean:       ocean,
+		IdQuiz:           id,
+		Date:             date,
+		Questions:        questions,
+		Country:          country,
+		CountryCode:      countryCode,
+		Region:           region,
+		Ocean:            ocean,
+		RespondedQuizzes: []int32{},
 	}
 	_, err = collection.InsertOne(ctx, quiz)
 	return id, err
+}
+
+// Updates a Quiz responded quizzes indexes
+func UpdateQuizRespondedQuizzes(db *mongo.Database, ctx context.Context,
+	id int32, newRespondedQuizzes []int32) error {
+	collection := db.Collection(collectionNameQuiz)
+
+	filter := bson.D{{Key: "idQuiz", Value: id}}
+	update := bson.D{{Key: "$set",
+		Value: bson.D{{Key: "respondedQuizzes", Value: newRespondedQuizzes}},
+	}}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Updates a Quiz responded quizzes indexes by adding a given new response index
+func AddQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
+	id int32, newRespondedQuizId int32) error {
+
+	collection := db.Collection(collectionNameQuiz)
+
+	filter := bson.D{{Key: "idQuiz", Value: id}}
+	update := bson.D{
+		{Key: "$push", Value: bson.D{
+			{Key: "respondedQuizzes", Value: newRespondedQuizId},
+		}},
+	}
+
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Updates a Quiz responded quizzes indexes by deleting a given existing response index
+func DeleteQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
+	id int32, respondedQuizId int32) error {
+
+	quiz, err := GetQuiz(db, ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Create new slice without the target id
+	newRespondedQuizzes := make([]int32, 0, len(quiz.RespondedQuizzes))
+	for _, v := range quiz.RespondedQuizzes {
+		if v != respondedQuizId {
+			newRespondedQuizzes = append(newRespondedQuizzes, v)
+		}
+	}
+
+	err = UpdateQuizRespondedQuizzes(db, ctx, id, newRespondedQuizzes)
+	return err
 }
 
 // Deletes a Quiz in DB for a given id
@@ -107,19 +159,17 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 			id64, err := strconv.ParseInt(paramStr, 10, 32)
 			if err == nil {
 				quizHandlerWithId(db, w, r, int32(id64))
+				return
 			}
 
 			// Checks if the parameter is a date
 			date, err := time.Parse(time.RFC3339, paramStr)
 			if err == nil {
 				quizHandlerWithDate(db, w, r, date)
-			}
-
-			if err != nil {
-				http.Error(w, "Invalid parameter format, must be an integer or a date", http.StatusBadRequest)
 				return
 			}
 
+			http.Error(w, "Invalid parameter format, must be an integer or a date", http.StatusBadRequest)
 		}
 
 	}
@@ -222,5 +272,82 @@ func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 	default:
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
+	}
+}
+
+// "/api/resources/quizzes/comments/id" handler, with id being a quiz id.
+func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// gets the potential parameter
+		paramStr := utility.GetSuffixParams("/api/resources/quizzes/comments/", r)
+
+		if paramStr == "" {
+			http.Error(w, "No quiz id given", http.StatusBadRequest)
+			return
+		} else {
+			fmt.Println("Request received on '/api/resources/quizzes/comments/id'")
+
+			// Checks if the parameter is an integer
+			id64, err := strconv.ParseInt(paramStr, 10, 32)
+			if err != nil {
+				http.Error(w, "Invalid parameter format, must be an integer", http.StatusBadRequest)
+				return
+			}
+			idQuiz := int32(id64)
+
+			// Get the Quiz with this id in DB
+			quiz, err := GetQuiz(db, r.Context(), idQuiz)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			comments := make([]Comment, 0)
+			// Search for responses to quizzes : get their informations for our comments
+			for _, idResponses := range quiz.RespondedQuizzes {
+
+				// Get the QuizResponses
+				responses, err := GetQuizResponses(db, r.Context(), idResponses)
+				if err != nil {
+					if err == mongo.ErrNoDocuments {
+						http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				// Get the User (for its username)
+				user, err := GetUser(db, r.Context(), responses.IdUser)
+				if err != nil {
+					if err == mongo.ErrNoDocuments {
+						http.Error(w, "No User for this id", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				// Create and add the comment to the resulting slice, if at least a note or a comment were given
+				if responses.Note > 0 || responses.Comment != "" {
+					comment := Comment{
+						IdUser:   responses.IdUser,
+						Username: user.Username,
+						Date:     responses.ResponseDate,
+						Note:     responses.Note,
+						Comment:  responses.Comment,
+					}
+					comments = append(comments, comment)
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(comments)
+		}
 	}
 }

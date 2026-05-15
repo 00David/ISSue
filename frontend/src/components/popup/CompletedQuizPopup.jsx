@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Star, X } from 'lucide-react';
 
-function CompletedQuizPopup({connected, postResponse, showPopup, setShowPopup, 
-    score, note, setNote, comment, setComment}) {
+function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup, 
+    score, note, setNote, comment, setComment, showInfo}) {
     const navigate = useNavigate();
 
     // Some comments...
@@ -16,24 +16,25 @@ function CompletedQuizPopup({connected, postResponse, showPopup, setShowPopup,
     const [randomCommentOnNote] = useState(() => {
         const randomSentence = (arr) => arr[Math.floor(Math.random() * arr.length)];
         
-        if (score === 10) return randomSentence(boss);
+        if (score == 10) return randomSentence(boss);
         if (score >= 7) return randomSentence(almostGotIt);
         if (score >= 5) return randomSentence(couldBeBetter);
         if (score >= 3) return randomSentence(meh);
         return randomSentence(how);
     });
 
-    function setStarNote(numStar){
-        if (numStar === note) {
+    const setStarNote = (numStar) => {
+        if (numStar == note) {
             setNote(0);
         } else {
             setNote(numStar);
         }
     }
 
-    function responsePostHandler(){
-        if (connected === -1) {
+    const postResponseHandler = () => {
+        if (connectedId == -1) {
             navigate("/login"); // if not connected, redirect to login
+            showInfo("Need to have an account !");
         } else {
             postResponse();
         }
@@ -87,7 +88,7 @@ function CompletedQuizPopup({connected, postResponse, showPopup, setShowPopup,
 
             {/* Post response */}
             <button
-                onClick={() => responsePostHandler()}
+                onClick={() => postResponseHandler()}
                 className="
                     text-white
                     hover:bg-[#304d73]

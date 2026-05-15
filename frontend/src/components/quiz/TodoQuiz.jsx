@@ -4,11 +4,11 @@ import ReactCountryFlag from "react-country-flag";
 import axios from 'axios';
 
 import Spinner from '../utility/Spinner.jsx';
-import Question from '../home/Question.jsx'
+import Question from './Question.jsx'
 import CompletedQuizPopup from '../popup/CompletedQuizPopup.jsx'
 
-function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, showResultsCached, 
-    onReload, isHome}) {
+function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached, showResultsCached, 
+    onReload, isHome, showError, showInfo}) {
 
     // for each case (= a question) : -1 if no selection, 0, 1, 2, or 3 if selected
     // (index of the response among answers)
@@ -17,7 +17,6 @@ function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, s
     const [comment, setComment] = useState(commentCached);
 
     const [showResults, setShowResults] = useState(showResultsCached);
-    const [showValidateWarning, setShowValidateWarning] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
 
     const [finalScore, setFinalScore] = useState(0);
@@ -42,18 +41,18 @@ function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, s
         }
     }, [quiz, showResults, selected, note, comment, isHome]);
 
-    async function postResponses() {
-        if (connected == -1) return;
+    const postResponses = async () => {
+        if (connectedId == -1) return;
 
         const responses = quiz.questions.map((question, index) => ({
             numQuestion: question.numQuestion,
             numResponse: selected[index],
-            correct: selected[index] === question.indexResponse
+            correct: selected[index] == question.indexResponse
         }));
 
         const payload = {
             idQuiz: quiz.idQuiz,
-            idUser: connected,
+            idUser: connectedId,
             responses: responses,
             note: note,
             comment: comment
@@ -73,38 +72,36 @@ function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, s
             onReload();
         } catch (error) {
             console.error("Error while posting quiz responses:\n", error.response.data);
+            showError("Error while posting quiz responses");
         }
     }
 
-    function nbSelected(){
+    const nbSelected = () => {
         return selected.reduce((acc, select) => (select != -1) ? acc+1 : acc, 0); 
     }
 
-    function isEverythingSelected(){
+    const isEverythingSelected = () => {
         return nbSelected() == quiz.questions.length; 
     }
 
-    function handleValidate(){
+    const handleValidate = () => {
         if (isEverythingSelected()){
             const totalScore = selected.reduce((acc, answerIndex, i) => {
-                if (answerIndex === -1) return acc;
+                if (answerIndex == -1) return acc;
                 const correctIndex = quiz.questions[i].indexResponse;
-                return answerIndex === correctIndex ? acc + 1 : acc;
+                return answerIndex == correctIndex ? acc + 1 : acc;
             }, 0);
             setFinalScore(totalScore);
             setShowResults(true);
             setShowPopup(true)
         } else{
-            setShowValidateWarning(true);
-            setTimeout(() => {
-                setShowValidateWarning(false);
-            }, 3000);
+            showInfo("Need to select all responses");
         }
     }
 
-    function setArraySelected(index, newSelected){
+    const setArraySelected = (index, newSelected) => {
         setSelected(
-            selected.map((existingSelection, i) => i === index ? newSelected : existingSelection)
+            selected.map((existingSelection, i) => i == index ? newSelected : existingSelection)
         );
     }
 
@@ -115,7 +112,7 @@ function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, s
         quizDate.getFullYear();
     return (
         <div id="Home-quiz-display" className="flex flex-col gap-4 justify-center 
-            items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto">
+            items-center self-center w-[95%] md:w-[70%] rounded-xl p-5 bg-midissue mx-auto">
             
             <ProgressBar className="sticky top-12 z-1000" now={nbSelected()*10} />
             
@@ -169,33 +166,19 @@ function TodoQuiz({connected, quiz, selectedCached, noteCached, commentCached, s
                 onClick={ () => handleValidate()}
             >
                 Validate
-
-                {/* Validate warning if not all responded */}
-                {
-                    showValidateWarning ? (
-                    <span
-                    className="
-                        absolute inset-0
-                        flex items-center justify-center
-                        bg-gray-800 text-white text-sm rounded-xl
-                    "
-                    >
-                    Need to select all responses
-                    </span>
-                    ) : null
-                }
             </button>
             
             {/* Complteted quiz popup, when validated */}
             {showResults ? (
                 <CompletedQuizPopup
-                    connected={connected}
+                    connectedId={connectedId}
                     postResponse={postResponses}
                     showPopup={showPopup}
                     setShowPopup={setShowPopup}
                     score={finalScore}
                     note={note} setNote={setNote}
                     comment={comment} setComment={setComment}
+                    showInfo={showInfo}
                 />
             ) : null}
         </div>

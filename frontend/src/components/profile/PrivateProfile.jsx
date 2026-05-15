@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Link } from 'react-router-dom';
 import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2 } from "lucide-react";
 
-function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount}) {
+function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount, showError, showInfo}) {
     
     const [isEditing, setIsEditing] = useState(false);
     const [editedUsername, setEditedUsername] = useState(user.username);
@@ -10,40 +11,66 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    /** Total number of quizzes responded. */
     const totalQuizzes = quizResponses.length;
+
+    /** Average score for quizzes reponded. At most one digit after the decimal point. */
     const averageScore = quizResponses.length > 0 
         ? (quizResponses.reduce((acc, q) => {
             const correct = q.responses.filter(r => r.correct).length;
             return acc + correct;
         }, 0) / quizResponses.length).toFixed(1)
         : 0;
+    
+    /** Get given notes (a note at 0 = no note given, don't keep it). */
+    const validNotes = quizResponses.map(q => q.note).filter(note => note > 0);
+    /** Average note given for responded quizzes. */
+    const averageNote = validNotes.length > 0
+    ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
+    : 0;
 
-    const averageNote = quizResponses.length > 0
-        ? (quizResponses.reduce((acc, q) => acc + (q.note || 0), 0) / quizResponses.length).toFixed(1)
-        : 0;
-
-    const joinDate = new Date();
-    const formattedJoinDate = joinDate.toLocaleDateString("en-US", { 
-        month: "long", 
-        year: "numeric" 
-    });
+    // Format date helper
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", { 
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
+    };
 
     const handleSaveChanges = async () => {
-        if (newPassword && newPassword !== confirmPassword) {
-            alert("Passwords don't match !");
+        if (newPassword && newPassword != confirmPassword) {
+            showError("Passwords don't match !");
             return;
         }
 
         const updates = {};
-        if (editedUsername !== user.username) updates.username = editedUsername;
-        if (editedEmail !== user.email) updates.email = editedEmail;
+        if (editedUsername != user.username) updates.username = editedUsername;
+        if (editedEmail != user.email) updates.email = editedEmail;
         if (newPassword) updates.password = newPassword;
 
         if (Object.keys(updates).length > 0) {
-            await onUpdateUser(updates);
-            setIsEditing(false);
-            setNewPassword("");
-            setConfirmPassword("");
+            try {
+                await onUpdateUser(updates);
+                setIsEditing(false);
+                setNewPassword("");
+                setConfirmPassword("");
+                showInfo("Profile updated successfully");
+            } catch (error) {
+                const message = error.response?.data || error.message || "Unknown error";
+                if (error.response?.status == 409) {
+                    showError("Username or email already taken");
+                } else {
+                    console.error("Error updating profile :\n", message);
+                    showError("Failed to update profile");
+                }
+
+                setEditedUsername(user.username);
+                setEditedEmail(user.email);
+                setNewPassword("");
+                setConfirmPassword("");
+            }
         } else {
             setIsEditing(false);
         }
@@ -51,7 +78,13 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
 
     const handleDeleteAccount = async () => {
         if (showDeleteConfirm) {
-            await onDeleteAccount();
+            try {
+                await onDeleteAccount();
+                showInfo("Profile deleted successfully");
+            } catch (error) {
+                console.error("Error deleting account:\n", error.response.data);
+                showError("Failed to delete account");
+            }
         } else {
             setShowDeleteConfirm(true);
         }
@@ -88,7 +121,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                     </h1>
                                     <div className="flex items-center gap-2 text-gray-400">
                                         <Calendar className="w-4 h-4" />
-                                        <span>Joined {formattedJoinDate}</span>
+                                        <span>Joined {formatDate(user.subscribeDate)}</span>
                                     </div>
                                 </>
                             )}
@@ -210,7 +243,9 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <Rocket className="w-5 h-5 text-green-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Score</h3>
-                        <p className="text-3xl font-bold text-white">{averageScore}/10</p>
+                        <p className="text-3xl font-bold text-white">
+                            {totalQuizzes > 0 ? averageScore+"/10" : "No data yet"}
+                        </p>
                     </div>
                 </div>
 
@@ -221,17 +256,23 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <Star className="w-5 h-5 text-yellow-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Note</h3>
-                        <div className="flex">
-                            {Array.from({ length: 5 }, (_, i) => (
-                                <Star
-                                    key={i}
-                                    className="w-4 h-4"
-                                    fill={i < Math.round(parseFloat(averageNote)) ? "gold" : "none"}
-                                    color={i < Math.round(parseFloat(averageNote)) ? "gold" : "currentColor"}
-                                />
-                            ))}
-                        </div>
-                        <p className="text-3xl font-bold text-white">{averageNote}</p>
+                        {
+                            validNotes.length > 0 ?
+                                (<div className="flex">
+                                    {Array.from({ length: 5 }, (_, i) => (
+                                        <Star
+                                            key={i}
+                                            className="w-4 h-4"
+                                            fill={i < Math.round(parseFloat(averageNote)) ? "gold" : "none"}
+                                            color={i < Math.round(parseFloat(averageNote)) ? "gold" : "currentColor"}
+                                        />
+                                    ))}
+                                </div>)
+                            : null
+                        }
+                        <p className="text-3xl font-bold text-white">
+                            {validNotes.length > 0 ? averageNote : "No data yet"}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -240,21 +281,13 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
             <div className="bg-midissue rounded-xl p-6 shadow-lg">
                 <h2 className="text-2xl font-bold text-white mb-4">Your Recent Activity</h2>
                 
-                {quizResponses.length === 0 ? (
+                {quizResponses.length == 0 ? (
                     <p className="text-gray-400 text-center py-8">No quizzes completed yet.</p>
                 ) : (
                     <div className="space-y-3">
                         {quizResponses.slice(0, 5).map((quizResponse, index) => {
                             const score = quizResponse.responses.filter(r => r.correct).length;
                             const date = new Date(quizResponse.responseDate);
-                            const formattedDate = date
-                                ? date.toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric"
-                                    })
-                                : "Unknown date";
-
                             return (
                                 <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors">
                                     <div className="flex items-center gap-3">
@@ -267,21 +300,28 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                             {score}/10
                                         </div>
                                         <div>
-                                            <p className="text-white font-medium">Quiz #{quizResponse.idQuiz}</p>
-                                            <p className="text-gray-400 text-sm">{formattedDate}</p>
+                                            <Link 
+                                                to={"/quiz/" + quizResponse.idQuiz}
+                                                className="text-white font-medium hover:text-blue-400 transition-colors"
+                                            >
+                                                Quiz #{quizResponse.idQuiz}
+                                            </Link>
+                                            <p className="text-gray-400 text-sm">{formatDate(date)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <div className="flex gap-1">
-                                            {Array.from({ length: 5 }, (_, i) => (
+                                        {quizResponse.note > 0 && (
+                                            <div className="flex gap-1">
+                                                {Array.from({ length: 5 }, (_, i) => (
                                                 <Star
                                                     key={i}
                                                     className="w-4 h-4"
-                                                    fill={i < (quizResponse.note || 0) ? "gold" : "none"}
-                                                    color={i < (quizResponse.note || 0) ? "gold" : "currentColor"}
+                                                    fill={i < quizResponse.note ? "gold" : "none"}
+                                                    color={i < quizResponse.note ? "gold" : "currentColor"}
                                                 />
-                                            ))}
-                                        </div>
+                                                ))}
+                                            </div>
+                                        )}
                                         {quizResponse.comment && (
                                             <span className="text-gray-400 text-sm italic">
                                                 "{quizResponse.comment.slice(0, 30)}{quizResponse.comment.length > 30 ? "..." : ""}"

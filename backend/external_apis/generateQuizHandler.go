@@ -122,6 +122,7 @@ func GenerateQuizHandler(db *mongo.Database, geminiKey string) http.HandlerFunc 
 			- Ensure strong topic diversity across all 10 questions
 			- Do not generate more than 2 questions about the exact same topic, fact, or idea
 			- Avoid repeating the same idea or rephrasing similar questions
+			- Do not include the quiz location (country, region, or ocean) as a correct answer choice.
 			- Each question has EXACTLY 4 options (max 80 characters each)
 			- Only ONE option is correct per question
 			- Provide the index (0-3) of the correct answer

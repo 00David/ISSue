@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/00David/ISSue/backend/resources"
 	"github.com/00David/ISSue/backend/utility"
@@ -63,14 +64,14 @@ func SignupHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		}
 
 		// The new user is created in the DB
-		idUser, err := resources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword))
+		idUser, err := resources.CreateUser(db, r.Context(), req.Username, req.Email, string(hashedPassword), time.Now().UTC())
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// Create the JWT token and the cookie containing it
-		err = utility.CreateTokenAndCookie(w, jwtSecret, idUser)
+		err = utility.CreateTokenAndCookie(w, jwtSecret, idUser, req.Username)
 		if err != nil {
 			http.Error(w, "Error while generating JWT token : "+err.Error(), http.StatusInternalServerError)
 			return

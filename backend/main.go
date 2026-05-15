@@ -65,6 +65,7 @@ func main() {
 
 	http.HandleFunc("/api/resources/quizzes", resources.QuizHandler(db))
 	http.HandleFunc("/api/resources/quizzes/", resources.QuizHandler(db))
+	http.HandleFunc("/api/resources/quizzes/comments/", resources.QuizCommentsHandler(db))
 
 	http.HandleFunc("/api/resources/quiz-responses", resources.QuizResponsesHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/quiz-responses/", resources.QuizResponsesHandler(db, jwtSecret))

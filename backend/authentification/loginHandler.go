@@ -60,7 +60,7 @@ func LoginHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		}
 
 		// Create the JWT token and the cookie containing it
-		err = utility.CreateTokenAndCookie(w, jwtSecret, user.IdUser)
+		err = utility.CreateTokenAndCookie(w, jwtSecret, user.IdUser, user.Username)
 		if err != nil {
 			http.Error(w, "Error while generating JWT token : "+err.Error(), http.StatusInternalServerError)
 			return

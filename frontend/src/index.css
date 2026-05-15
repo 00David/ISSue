@@ -47,17 +47,6 @@ p {
     margin-bottom: 1rem;
 }
 
-a {
-    color: #4a7ba7;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-a:hover {
-    color: #6a9bc7;
-    text-decoration: underline;
-}
-
 /* ===== PERSONALIZED COLORS ===== */
 @theme {
     --color-darkissue: #0a1128;
