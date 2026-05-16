@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
 import axios from 'axios';
@@ -8,7 +8,7 @@ import Question from './Question.jsx'
 import CompletedQuizPopup from '../popup/CompletedQuizPopup.jsx'
 
 function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached, showResultsCached, 
-    onReload, isHome, showError, showInfo}) {
+    onReload, showError, showInfo}) {
 
     // for each case (= a question) : -1 if no selection, 0, 1, 2, or 3 if selected
     // (index of the response among answers)
@@ -20,6 +20,20 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
     const [showPopup, setShowPopup] = useState(false);
 
     const [finalScore, setFinalScore] = useState(0);
+
+    const today = useMemo(() => new Date(), []);
+    const quizDate = useMemo(() => new Date(quiz.date), [quiz.date]);
+    const formattedQuizDate =
+        String(quizDate.getDate()).padStart(2, "0") + "/" +
+        String(quizDate.getMonth() + 1).padStart(2, "0") + "/" +
+        quizDate.getFullYear();
+    const isSameDay = (dateA, dateB) => {
+        return (
+            dateA.getFullYear() == dateB.getFullYear() &&
+            dateA.getMonth() == dateB.getMonth() &&
+            dateA.getDate() == dateB.getDate()
+        );
+    }
 
     // Stores in cache the quiz progression
     useEffect(() => {
@@ -34,12 +48,11 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
             expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes,
         };
 
-        if (isHome) {
+        if (isSameDay(today, quizDate)) {
             localStorage.setItem("quiz-home-cache", JSON.stringify(cache));
-        } else {
-            localStorage.setItem("quiz"+quiz.idQuiz+"-cache", JSON.stringify(cache));
         }
-    }, [quiz, showResults, selected, note, comment, isHome]);
+        localStorage.setItem("quiz"+quiz.idQuiz+"-cache", JSON.stringify(cache));
+    }, [quiz, showResults, selected, note, comment, today, quizDate]);
 
     const postResponses = async () => {
         if (connectedId == -1) return;
@@ -63,11 +76,11 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
                 payload
             );
             // Quiz cache cleaned
-            if (isHome) {
+            if (isSameDay(today, quiz.date)) {
                 localStorage.removeItem("quiz-home-cache");
-            } else {
-                localStorage.removeItem("quiz"+quiz.idQuiz+"-cache");
             }
+            localStorage.removeItem("quiz"+quiz.idQuiz+"-cache");
+
             setShowPopup(false);
             onReload();
         } catch (error) {
@@ -105,11 +118,6 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
         );
     }
 
-    const quizDate = new Date(quiz.date);
-    const formattedQuizDate =
-        String(quizDate.getDate()).padStart(2, "0") + "/" +
-        String(quizDate.getMonth() + 1).padStart(2, "0") + "/" +
-        quizDate.getFullYear();
     return (
         <div id="Home-quiz-display" className="flex flex-col gap-4 justify-center 
             items-center self-center w-[95%] md:w-[70%] rounded-xl p-5 bg-midissue mx-auto">
@@ -118,7 +126,12 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
             
             {/* Quiz infos header */}
             <div id="Home-quiz-header" className="flex flex-col justify-center items-center self-center">
-                <h3 className="text-center">{formattedQuizDate} quiz is about ...</h3>
+                <h3 className="text-center">
+                    {
+                        isSameDay(today, quizDate) ? "Today's quiz is about ..." 
+                        : formattedQuizDate+" quiz was about ..."
+                    } 
+                </h3>
 
                 {!quiz.ocean && <ReactCountryFlag 
                     countryCode={quiz.countryCode}
@@ -149,8 +162,8 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
                     relative
                     group w-max
                     text-white
-                    bg-[#4a7ba7]
-                    hover:bg-[#304d73]
+                    bg-peacefullissue
+                    hover:bg-darkpeacefullissue
                     active:scale-[0.98]
                     mt-4
                     rounded-xl

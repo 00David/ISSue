@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2 } from "lucide-react";
 
 function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount, showError, showInfo}) {
-    
+    const navigate = useNavigate();
+
     const [isEditing, setIsEditing] = useState(false);
     const [editedUsername, setEditedUsername] = useState(user.username);
     const [editedEmail, setEditedEmail] = useState(user.email);
@@ -134,7 +136,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <>
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-[#4a7ba7] hover:bg-[#304d73] text-white rounded-lg transition-colors cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-peacefullissue hover:bg-darkpeacefullissue text-white rounded-lg transition-colors cursor-pointer"
                                 >
                                     <Edit2 className="w-4 h-4" />
                                     Edit Profile
@@ -289,7 +291,9 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             const score = quizResponse.responses.filter(r => r.correct).length;
                             const date = new Date(quizResponse.responseDate);
                             return (
-                                <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors">
+                                <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
+                                    onClick={() => navigate("/quiz/"+quizResponse.idQuiz)}
+                                    >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold ${
                                             score >= 9 ? "bg-green-500/20 text-green-400" :
@@ -300,12 +304,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                             {score}/10
                                         </div>
                                         <div>
-                                            <Link 
-                                                to={"/quiz/" + quizResponse.idQuiz}
-                                                className="text-white font-medium hover:text-blue-400 transition-colors"
-                                            >
-                                                Quiz #{quizResponse.idQuiz}
-                                            </Link>
+                                            <p className="text-white font-medium">Quiz #{quizResponse.idQuiz}</p>
                                             <p className="text-gray-400 text-sm">{formatDate(date)}</p>
                                         </div>
                                     </div>

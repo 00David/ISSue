@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MessageSquare, Star, Calendar, User } from 'lucide-react';
+import { MessageSquare, Star, Calendar } from 'lucide-react';
 
 import Spinner from '../utility/Spinner.jsx';
 

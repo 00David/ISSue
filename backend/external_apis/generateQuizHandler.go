@@ -185,16 +185,34 @@ func GenerateQuizHandler(db *mongo.Database, geminiKey string) http.HandlerFunc 
 			},
 		}
 
-		// Generate content
-		genResp, err := client.Models.GenerateContent(
-			ctx,
-			"gemini-2.5-flash",
-			genai.Text(prompt),
-			config,
-		)
-		if err != nil {
-			http.Error(w, "Gemini generation error : "+err.Error(), http.StatusInternalServerError)
-			return
+		// Generate content (with retry + backoff)
+		var genResp *genai.GenerateContentResponse
+
+		backoff := 30 * time.Second // After the first one, each next attempt is done every 30s
+		maxAttempts := 20           // Max 20 attemps = 10min
+
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			genResp, err = client.Models.GenerateContent(
+				ctx,
+				"gemini-2.5-flash",
+				genai.Text(prompt),
+				config,
+			)
+
+			if err == nil {
+				break // success
+			}
+
+			// last attempt -> fail
+			if attempt == maxAttempts {
+				http.Error(w, "Gemini generation error after retries: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			fmt.Printf("[Gemini retry] attempt %d/%d failed: %v -> retrying in %s\n",
+				attempt, maxAttempts, err, backoff)
+
+			time.Sleep(backoff)
 		}
 
 		// Parse Gemini response

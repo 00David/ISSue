@@ -73,8 +73,8 @@ function Login({connectedId, setConnected, showError}) {
                     type="submit"
                     className="
                         text-white
-                        bg-[#4a7ba7]
-                        hover:bg-[#304d73]
+                        bg-peacefullissue
+                        hover:bg-darkpeacefullissue
                         mt-4
                         rounded-xl
                         px-4
@@ -88,7 +88,10 @@ function Login({connectedId, setConnected, showError}) {
 
                 <p className="text-sm text-center mt-2">
                     Don't have an account?{" "}
-                    <Link to="/signup">Sign up</Link>
+                    <Link className="text-peacefullissue no-underline transition-colors duration-300 ease-in-out hover:text-[#6a9bc7] hover:underline" 
+                            to="/signup">
+                        Sign up
+                    </Link>
                 </p>
             </form>
         </div>

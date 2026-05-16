@@ -63,13 +63,15 @@ func main() {
 	http.HandleFunc("/api/resources/iss", resources.ISSHandler(db))
 	http.HandleFunc("/api/resources/iss/", resources.ISSHandler(db))
 
+	http.HandleFunc("/api/resources/quizzes/comments/", resources.QuizCommentsHandler(db))
 	http.HandleFunc("/api/resources/quizzes", resources.QuizHandler(db))
 	http.HandleFunc("/api/resources/quizzes/", resources.QuizHandler(db))
-	http.HandleFunc("/api/resources/quizzes/comments/", resources.QuizCommentsHandler(db))
 
 	http.HandleFunc("/api/resources/quiz-responses", resources.QuizResponsesHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/quiz-responses/", resources.QuizResponsesHandler(db, jwtSecret))
 
+	http.HandleFunc("/api/resources/users/leaderboard", resources.UsersLeaderboardHandler(db))
+	http.HandleFunc("/api/resources/users/responded/", resources.UsersRespondedQuizzesHandler(db))
 	http.HandleFunc("/api/resources/users", resources.UsersHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 

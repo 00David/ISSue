@@ -40,10 +40,9 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
 
                 // Remove the cached quiz data if too old, or from a different date
                 if (cacheExpired || isDifferentQuiz) {
+                    localStorage.removeItem("quiz"+parsed.quiz.idQuiz+"-cache");
                     if (isHome) {
                         localStorage.removeItem("quiz-home-cache");
-                    } else {
-                        localStorage.removeItem("quiz"+parsed.quiz.idQuiz+"-cache");
                     }
                 } else {
                     setQuiz(parsed.quiz);
@@ -75,9 +74,12 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
 
     useEffect(() => {
         const fetchQuizResponses = async () => {
+            if (connectedId == -1 || !quiz){
+                setLoading(false);
+                return;
+            }
+
             try {
-                if (connectedId == -1 || !quiz) return;
-            
                 const fetchedQuizResp = await axios.get(
                     "/api/resources/quiz-responses?" +
                     "idquiz=" + quiz.idQuiz +
@@ -129,6 +131,7 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
                 <RespondedQuiz 
                     quiz={quiz} 
                     quizResponses={quizResponses}
+                    isHome={isHome}
                 />
             ) : (
                 <TodoQuiz 

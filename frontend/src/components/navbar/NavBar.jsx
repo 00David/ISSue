@@ -23,7 +23,7 @@ function NavBar({connectedId, connectedUsername}) {
             </div>
 
             {/* Quizzes link */}
-            <div id="navbar-2" className="absolute left-1/2 -translate-x-1/2">
+            <div id="navbar-2" className="absolute left-3/8 -translate-x-3/8">
                 <span 
                     className="cursor-pointer hover:text-gray-400"
                     onClick={() => navigate("/quizzes")}>
@@ -31,8 +31,17 @@ function NavBar({connectedId, connectedUsername}) {
                 </span>
             </div>
 
+            {/* Leaderboard link */}
+            <div id="navbar-3" className="absolute left-5/8 -translate-x-5/8">
+                <span 
+                    className="cursor-pointer hover:text-gray-400"
+                    onClick={() => navigate("/leaderboard")}>
+                    Leaderboard
+                </span>
+            </div>
+
             {/* Connected (or not) icon + login/profile link depending on connected state */}
-            <div id="navbar-3" className="flex justify-center items-center px-2">
+            <div id="navbar-4" className="flex justify-center items-center px-2">
                 {connectedId == -1 ? 
                     <LogIn className= "cursor-pointer  hover:text-gray-400" 
                         onClick={() => navigate("/login")}></LogIn>

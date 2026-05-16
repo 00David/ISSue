@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
-import Home from './components/home/Home.jsx'
+import Home from './components/home/Home.jsx';
+import Quizzes from "./components/quizzes/Quizzes.jsx";
 import QuizPage from "./components/quiz/QuizPage.jsx";
-import Login from './components/login/Login.jsx'
-import Signup from './components/signup/Signup.jsx'
-import Profile from './components/profile/Profile.jsx'
+import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
+import Login from './components/login/Login.jsx';
+import Signup from './components/signup/Signup.jsx';
+import Profile from './components/profile/Profile.jsx';
 import NotFound from './components/notfound/NotFound.jsx';
 import NavBar from "./components/navbar/NavBar.jsx";
 import ErrorPopup from "./components/popup/ErrorPopup.jsx";
@@ -85,7 +87,9 @@ function App() {
 			{info.showInfo && (<InfoPopup message={info.infoMessage} onClose={onCloseInfo}></InfoPopup>)}
 			<Routes>
 				<Route path="/" element={<Home connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Home page */}
+				<Route path="/quizzes" element={<Quizzes connectedId={connected.id} />} /> {/* Page displaying available quizzes */}
 				<Route path="/quiz/:id" element={<QuizPage connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Page displaying a specific quiz */}
+				<Route path="/leaderboard" element={<LeaderboardPage />} /> {/* Page displaying leaderboard of ISSue users */}
 				<Route path="/login" element={<Login connectedId={connected.id} setConnected={setConnected} showError={showError} />} /> {/* Login page */}
 				<Route path="/signup" element={<Signup connectedId={connected.id} setConnected={setConnected} showError={showError} />} /> {/* Sign up page */}
 				<Route path="/profile/:id" element={<Profile connectedId={connected.id} setConnected={setConnected} showError={showError} showInfo={showInfo} />} /> {/* Profile page */}

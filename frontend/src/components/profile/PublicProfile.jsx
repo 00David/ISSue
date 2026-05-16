@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Star, Rocket, Trophy, Calendar, User } from "lucide-react";
 import { Link } from 'react-router-dom';
 
 function PublicProfile({user, quizResponses}) {
-    
+    const navigate = useNavigate();
+
     /** Total number of quizzes responded. */
     const totalQuizzes = quizResponses.length;
 
@@ -121,7 +123,9 @@ function PublicProfile({user, quizResponses}) {
                             const score = quizResponse.responses.filter(r => r.correct).length;
                             const date = new Date(quizResponse.responseDate);
                             return (
-                                <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors">
+                                <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
+                                    onClick={() => navigate("/quiz/"+quizResponse.idQuiz)}
+                                    >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold ${
                                             score >= 9 ? "bg-green-500/20 text-green-400" :
@@ -132,12 +136,7 @@ function PublicProfile({user, quizResponses}) {
                                             {score}/10
                                         </div>
                                         <div>
-                                            <Link 
-                                                to={"/quiz/" + quizResponse.idQuiz}
-                                                className="text-white font-medium hover:text-blue-400 transition-colors"
-                                            >
-                                                Quiz #{quizResponse.idQuiz}
-                                            </Link>
+                                            <p className="text-white font-medium">Quiz #{quizResponse.idQuiz}</p>
                                             <p className="text-gray-400 text-sm">{formatDate(date)}</p>
                                         </div>
                                     </div>

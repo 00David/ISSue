@@ -5,7 +5,7 @@ import { Star } from 'lucide-react';
 import Spinner from '../utility/Spinner.jsx';
 import Question from './Question.jsx'
 
-function RespondedQuiz({quiz, quizResponses}) {
+function RespondedQuiz({quiz, quizResponses, isHome}) {
 
     const selected = quizResponses.responses.map(
         (response) => response.numResponse
@@ -26,8 +26,14 @@ function RespondedQuiz({quiz, quizResponses}) {
         <div id="Home-quiz-display" className="flex flex-col gap-4 justify-center 
             items-center self-center w-[95%] md:w-[70%] rounded-xl p-5 bg-midissue mx-auto">
             
+            {/* Quiz infos header */}
             <div id="Home-quiz-header" className="flex flex-col justify-center items-center self-center">
-                <h3 className="text-center">{formattedQuizDate} quiz is about ...</h3>
+                <h3 className="text-center">
+                    {
+                        isHome ? "Today's quiz is about ..." 
+                        : formattedQuizDate+" quiz was about ..."
+                    } 
+                </h3>
                 {!quiz.ocean && <ReactCountryFlag 
                     countryCode={quiz.countryCode}
                     className = "w-[30%] h-[30%]"
@@ -36,6 +42,7 @@ function RespondedQuiz({quiz, quizResponses}) {
                 {quiz.region && <h3 className="text-center">and its "{quiz.region}" region !</h3>} 
             </div>
 
+            {/* Questions */}
             <div id="Home-quiz-questions">
                     {quiz.questions.map((question, index) => {
                          return (

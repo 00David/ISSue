@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -47,6 +48,33 @@ func GetUserWithInfo(db *mongo.Database, ctx context.Context,
 	var user User
 	err := collection.FindOne(ctx, filter).Decode(&user)
 	return user, err
+}
+
+// Returns all Users in DB
+func GetAllUsers(db *mongo.Database, ctx context.Context) ([]User, error) {
+	collection := db.Collection(collectionNameUsers)
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []User
+
+	for cursor.Next(ctx) {
+		var user User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 // Creates a User in DB, returns its new id
@@ -401,5 +429,110 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 	default:
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
+	}
+}
+
+// "/api/resources/users/responded/id" handler
+func UsersRespondedQuizzesHandler(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// gets the potential id parameter
+		idStr := utility.GetSuffixParams("/api/resources/users/responded/", r)
+
+		if idStr == "" {
+			http.Error(w, "Invalid request format, must provide an id", http.StatusBadRequest)
+			return
+		} else {
+			fmt.Println("Request received on '/api/resources/users/responded/id'")
+			// Checks that the parameter is an integer
+			id64, err := strconv.ParseInt(idStr, 10, 32)
+			if err != nil {
+				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
+				return
+			}
+			idUser := int32(id64)
+
+			// Get the user in DB
+			user, err := GetUser(db, r.Context(), idUser)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No User for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			respondedQuizzes := make([]int32, 0)
+			// For every response, get the quiz id for which it has responded
+			for _, idResponse := range user.RespondedQuizzes {
+
+				response, err := GetQuizResponses(db, r.Context(), idResponse)
+				if err != nil {
+					if err == mongo.ErrNoDocuments {
+						http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				respondedQuizzes = append(respondedQuizzes, response.IdQuiz)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(respondedQuizzes)
+		}
+
+	}
+}
+
+// "/api/resources/users/leaderboard" handler
+func UsersLeaderboardHandler(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		fmt.Println("Request received on '/api/resources/users/leaderboard'")
+
+		// Get users in DB
+		users, err := GetAllUsers(db, r.Context())
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		leaderboardUsers := make([]LeaderboardUser, 0)
+		// For every user, get its leaderboard infos
+		for _, user := range users {
+
+			leaderboardUser, err := toLeaderboardUser(db, r.Context(), user)
+			if err != nil {
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			leaderboardUsers = append(leaderboardUsers, leaderboardUser)
+		}
+
+		// Sort users by total score (higher first), then by alphabetical order on the username in case of ties
+		slices.SortFunc(leaderboardUsers, func(a, b LeaderboardUser) int {
+			if a.TotalScore < b.TotalScore {
+				return 1
+			}
+			if a.TotalScore > b.TotalScore {
+				return -1
+			}
+
+			if a.Username > b.Username {
+				return 1
+			}
+			if a.Username < b.Username {
+				return -1
+			}
+			return 0
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(leaderboardUsers)
+
 	}
 }

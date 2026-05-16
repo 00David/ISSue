@@ -27,6 +27,7 @@ function QuizPage({connectedId, showError, showInfo}) {
             </aside>
 
             <div id="Quiz-center" className="justify-center items-center space-y-10">
+                <h1 className="text-center">Quiz page</h1>
                 {quizDate && <ISSPosition canShowCurrentPosition={false} ISSQuizDate={quizDate} />}
                 <Quiz connectedId={connectedId} idQuiz={urlIdQuiz} setQuizDate={setQuizDate} setNotFound={setNotFound} showError={showError} showInfo={showInfo}/>
             </div>

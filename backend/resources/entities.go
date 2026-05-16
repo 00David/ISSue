@@ -112,6 +112,43 @@ func toPrivateUser(u User) PrivateUser {
 	}
 }
 
+// Leaderboard informations of a user
+type LeaderboardUser struct {
+	IdUser          int32  `json:"idUser"`
+	Username        string `json:"username"`
+	TotalScore      int32  `json:"totalScore"`
+	NbQuizResponded int32  `json:"nbQuizResponded"`
+}
+
+// Get a mix of public user infos and its performances
+func toLeaderboardUser(db *mongo.Database, ctx context.Context, user User) (LeaderboardUser, error) {
+	totalScore := 0
+
+	// Search for responses of our user and sum its total score
+	for _, idResponses := range user.RespondedQuizzes {
+		responses, err := GetQuizResponses(db, ctx, idResponses)
+		if err != nil {
+			return LeaderboardUser{}, err
+		}
+		score := 0
+		for _, r := range responses.Responses {
+			if r.Correct {
+				score++
+			}
+		}
+		totalScore += score
+	}
+
+	leaderboarduser := LeaderboardUser{
+		IdUser:          user.IdUser,
+		Username:        user.Username,
+		TotalScore:      int32(totalScore),
+		NbQuizResponded: int32(len(user.RespondedQuizzes)),
+	}
+
+	return leaderboarduser, nil
+}
+
 // ============================================================
 // ============== ON QUIZ COMMENTS GET METHOD =================
 // ============================================================
@@ -122,6 +159,82 @@ type Comment struct {
 	Date     time.Time `json:"date"`
 	Note     int32     `json:"note"`
 	Comment  string    `json:"comment"`
+}
+
+// ============================================================
+// =========== ON QUIZZES GET METHOD (WITH STATS) =============
+// ============================================================
+
+type QuizWithStats struct {
+	IdQuiz           int32      `json:"idQuiz"`
+	Date             time.Time  `json:"date"`
+	Questions        []Question `json:"questions"`
+	Country          string     `json:"country"`
+	CountryCode      string     `json:"countryCode"`
+	Region           string     `json:"region"`
+	Ocean            bool       `json:"ocean"`
+	RespondedQuizzes []int32    `json:"respondedQuizzes"`
+	AvgScore         float32    `json:"avgScore"`    // -1 if no scores to take into account
+	AvgUserNote      float32    `json:"avgUserNote"` // -1 if no given notes to take into account
+	NbComments       int32      `json:"nbComments"`
+}
+
+// Construct the quiz structure containing statistics on its responses
+func toQuizWithStats(db *mongo.Database, ctx context.Context, quiz Quiz) (QuizWithStats, error) {
+	totalScores := 0
+	var totalComments int32 = 0
+	var totalNotes int32 = 0
+	var countedNotes int32 = 0
+
+	// Search for responses to this quiz and sum with our constructed stats
+	for _, idResponses := range quiz.RespondedQuizzes {
+		responses, err := GetQuizResponses(db, ctx, idResponses)
+		if err != nil {
+			return QuizWithStats{}, err
+		}
+		score := 0
+		for _, r := range responses.Responses {
+			if r.Correct {
+				score++
+			}
+		}
+		totalScores += score
+
+		if responses.Comment != "" {
+			totalComments++
+		}
+
+		if responses.Note > 0 { // a note of 0 = not been given
+			totalNotes += responses.Note
+			countedNotes++
+		}
+	}
+
+	avgScore := float32(-1)
+	if len(quiz.RespondedQuizzes) > 0 {
+		avgScore = float32(totalScores) / float32(len(quiz.RespondedQuizzes))
+	}
+
+	avgNote := float32(-1)
+	if countedNotes > 0 {
+		avgNote = float32(totalNotes) / float32(countedNotes)
+	}
+
+	quizStats := QuizWithStats{
+		IdQuiz:           quiz.IdQuiz,
+		Date:             quiz.Date,
+		Questions:        quiz.Questions,
+		Country:          quiz.Country,
+		CountryCode:      quiz.CountryCode,
+		Region:           quiz.Region,
+		Ocean:            quiz.Ocean,
+		RespondedQuizzes: quiz.RespondedQuizzes,
+		AvgScore:         avgScore,
+		AvgUserNote:      avgNote,
+		NbComments:       totalComments,
+	}
+
+	return quizStats, nil
 }
 
 // ============================================================

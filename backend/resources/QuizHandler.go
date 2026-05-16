@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -46,6 +47,82 @@ func GetQuizWithDate(db *mongo.Database, ctx context.Context, date time.Time) (Q
 	var quiz Quiz
 	err := collection.FindOne(ctx, filter).Decode(&quiz)
 	return quiz, err
+}
+
+// Returns a Quiz in DB for a given id, with stats on its responses
+func GetQuizWithStats(db *mongo.Database, ctx context.Context, id int32) (QuizWithStats, error) {
+	collection := db.Collection(collectionNameQuiz)
+
+	filter := bson.D{{Key: "idQuiz", Value: id}}
+	var quiz Quiz
+	err := collection.FindOne(ctx, filter).Decode(&quiz)
+	if err != nil {
+		return QuizWithStats{}, err
+	}
+
+	return toQuizWithStats(db, ctx, quiz)
+}
+
+// Returns all quizzes in DB
+func GetAllQuizzes(db *mongo.Database, ctx context.Context) ([]Quiz, error) {
+	collection := db.Collection(collectionNameQuiz)
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var quizzes []Quiz
+
+	for cursor.Next(ctx) {
+		var quiz Quiz
+		err = cursor.Decode(&quiz)
+		if err != nil {
+			return nil, err
+		}
+		quizzes = append(quizzes, quiz)
+	}
+
+	err = cursor.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return quizzes, nil
+}
+
+// Returns all quizzes in DB, with their stats on them
+func GetAllQuizzesWithStats(db *mongo.Database, ctx context.Context) ([]QuizWithStats, error) {
+	collection := db.Collection(collectionNameQuiz)
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var quizzes []QuizWithStats
+
+	for cursor.Next(ctx) {
+		var quiz Quiz
+		err = cursor.Decode(&quiz)
+		if err != nil {
+			return nil, err
+		}
+		quizStats, err := toQuizWithStats(db, ctx, quiz)
+		if err != nil {
+			return nil, err
+		}
+		quizzes = append(quizzes, quizStats)
+	}
+
+	err = cursor.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return quizzes, nil
 }
 
 // Creates a Quiz in DB, returns its new id
@@ -175,9 +252,58 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 	}
 }
 
-// "/api/resources/quizzes" handler
+// "/api/resources/quizzes[?stats=true]" handler
 func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodGet: // GET
+
+		// gets the potential stats parameters
+		query := r.URL.Query()
+		stats := query.Get("stats")
+
+		if stats == "true" { // Quizzes with stats
+			quizzesWithStats, err := GetAllQuizzesWithStats(db, r.Context())
+			if err != nil {
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Sort quizes by date (most recent first)
+			slices.SortFunc(quizzesWithStats, func(a, b QuizWithStats) int {
+				if a.Date.Before(b.Date) {
+					return 1
+				}
+				if a.Date.After(b.Date) {
+					return -1
+				}
+				return 0
+			})
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(quizzesWithStats)
+
+		} else { // Quizzes without stats
+			quizzes, err := GetAllQuizzes(db, r.Context())
+			if err != nil {
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Sort quizes by date (most recent first)
+			slices.SortFunc(quizzes, func(a, b Quiz) int {
+				if a.Date.Before(b.Date) {
+					return 1
+				}
+				if a.Date.After(b.Date) {
+					return -1
+				}
+				return 0
+			})
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(quizzes)
+		}
+
 	case http.MethodPost: // POST
 
 		// Body decoding
@@ -233,23 +359,46 @@ func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// "/api/resources/quizzes/id" handler
+// "/api/resources/quizzes/id[?stats=true]" handler
 func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
 	switch r.Method {
 	case http.MethodGet: // GET
 
-		// Getting the Quiz with this id in DB
-		quiz, err := GetQuiz(db, r.Context(), id)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No Quiz for this id", http.StatusNotFound)
+		// gets the potential stats parameters
+		query := r.URL.Query()
+		stats := query.Get("stats")
+
+		if stats == "true" {
+
+			// Getting the Quiz with this id with its stats in DB
+			quiz, err := GetQuizWithStats(db, r.Context(), id)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(quiz)
+
+		} else {
+
+			// Getting the Quiz with this id in DB
+			quiz, err := GetQuiz(db, r.Context(), id)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(quiz)
+
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(quiz)
 
 	case http.MethodDelete: // DELETE
 
@@ -345,6 +494,17 @@ func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
 					comments = append(comments, comment)
 				}
 			}
+
+			// Sort comments by date (most recent first)
+			slices.SortFunc(comments, func(a, b Comment) int {
+				if a.Date.Before(b.Date) {
+					return 1
+				}
+				if a.Date.After(b.Date) {
+					return -1
+				}
+				return 0
+			})
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(comments)

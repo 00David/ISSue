@@ -91,8 +91,8 @@ function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup,
                 onClick={() => postResponseHandler()}
                 className="
                     text-white
-                    hover:bg-[#304d73]
-                    bg-[#4a7ba7]
+                    hover:bg-darkpeacefullissue
+                    bg-peacefullissue
                     w-full
                     active:scale-[0.98]
                     mt-4

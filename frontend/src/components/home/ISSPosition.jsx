@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import axios from 'axios';
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import axios from "axios";
 
-import Spinner from '../utility/Spinner.jsx';
-import RecenterMap from './RecenterMap.jsx'
+import Spinner from "../utility/Spinner.jsx";
+import RecenterMap from "./RecenterMap.jsx"
 
 function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
     const [ISSCurrentPosition,setISSCurrentPosition] = useState([0, 0]); // [latitude, longitude]
@@ -31,7 +31,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // CURRENT ISS (polling)
             if (canShowCurrentPosition) {
                 try {
-                    const response = await axios.get('/api/external/iss');
+                    const response = await axios.get("/api/external/iss");
                     const { latitude, longitude } = response.data;
                     setISSCurrentPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
@@ -43,7 +43,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // QUIZ ISS (one shot, on first loading)
             if (firstLoad && ISSQuizDate) {
                 try {
-                    const response = await axios.get('/api/resources/iss/'+encodeURIComponent(ISSQuizDate));
+                    const response = await axios.get("/api/resources/iss/"+encodeURIComponent(ISSQuizDate));
                     const { latitude, longitude } = response.data;
                     setISSQuizPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
@@ -68,30 +68,9 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
         
     }, [canShowCurrentPosition, ISSQuizDate]);
 
-    const currentISSLabelColor = currentIsSelected ? "text-gray-500" : "hover:text-gray-400";
-    const quizISSLabelColor = currentIsSelected ? "hover:text-gray-400" : "text-gray-500";
-  
-    const selectedDiv = canShowCurrentPosition ? (
-        <div className="grid grid-cols-2">
-            <div>
-                <h3 className={"text-center cursor-pointer "+currentISSLabelColor}
-                    onClick={() => switchToCurrent()}>Current ISS position</h3>
-            </div>
-            <div>
-                <h3 className={"text-center cursor-pointer "+quizISSLabelColor}
-                    onClick={() => switchToQuiz()}>Quiz ISS position</h3>
-            </div>
-        </div>
-    ) : (
-        <div>
-            <h3 className={"text-center cursor-pointer "+quizISSLabelColor}>Quiz ISS position</h3>
-        </div>
-    );
-
-    // Loader displayed while the position is not yet fetched
     if (loading) {
         return (
-            <div id="ISS-display" className="flex flex-col justify-center items-center self-center space-y-4 h-110">
+            <div className="flex flex-col justify-center items-center self-center space-y-4 h-110">
                 <Spinner />
                 <p className="text-center">🛰️ Tracking ISS position...</p>  
             </div>
@@ -99,22 +78,68 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
     }
 
     return (
-        <div id="ISS-display" className="flex flex-col justify-center items-center self-center space-y-4 h-110">
-            {selectedDiv}
-            <MapContainer className="w-full rounded-xl h-100" center={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}  zoom={4}>
-                <RecenterMap
-                    position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}
-                    trigger={recenter}
-                />
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; OpenStreetMap contributors'
-                />
-                <Marker position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}>
-                    <Popup>{currentIsSelected ? "🛰️ ISS is here!" : "🛰️ ISS was here!"}</Popup>
-                </Marker>
-            </MapContainer>
-            
+        <div className="flex flex-col justify-center items-center self-center space-y-6 h-120">
+
+            {/* ISS position toggle buttons */}
+            {canShowCurrentPosition ? (
+                <div className="inline-flex bg-midissue rounded-full p-1 shadow-sm">
+                    <button
+                        onClick={switchToCurrent}
+                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                            currentIsSelected 
+                                ? "bg-lightissue text-white shadow-md" 
+                                : "text-gray-500"
+                        }`}
+                    >
+                        🛰️ Current position
+                    </button>
+                    <button
+                        onClick={switchToQuiz}
+                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                            !currentIsSelected 
+                                ? "bg-lightissue text-white shadow-md"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        📍 Quiz position
+                    </button>
+                </div>
+            ) : (
+                <div className="inline-flex bg-midissue rounded-full px-6 py-2 shadow-sm">
+                    <button onClick={switchToQuiz} className="text-sm font-medium text-white cursor-pointer">📍 Quiz position</button>
+                </div>
+            )}
+
+            {/* ISS Map */}
+            <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+                <MapContainer 
+                    className="w-full h-100" 
+                    center={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}  
+                    zoom={4}
+                >
+                    <RecenterMap
+                        position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}
+                        trigger={recenter}
+                    />
+                    <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution="&copy; OpenStreetMap contributors"
+                    />
+                    <Marker position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}>
+                        <Popup>{currentIsSelected ? "🛰️ ISS is here!" : "🛰️ ISS was here!"}</Popup>
+                    </Marker>
+                </MapContainer>
+            </div>
+
+            {/* If current ISS poistion is selected : blinking update info */}
+            <div className="h-6 flex items-center justify-center">
+                {canShowCurrentPosition && currentIsSelected && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <span>Updated every 5 seconds</span>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
