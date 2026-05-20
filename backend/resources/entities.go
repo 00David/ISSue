@@ -68,6 +68,7 @@ type User struct {
 	Password         string    `json:"password" bson:"password"`                 // user HASHED password
 	SubscribeDate    time.Time `json:"subscribeDate" bson:"subscribeDate"`       // user subscribe date
 	RespondedQuizzes []int32   `json:"respondedQuizzes" bson:"respondedQuizzes"` // ids of this user answers to quizzes (QuizResponses)
+	PinnedQuizzes    []int32   `json:"pinnedQuizzes" bson:"pinnedQuizzes"`       // ids of this user pinned quizzes
 }
 
 // ============================================================
@@ -80,6 +81,7 @@ type PublicUser struct {
 	Username         string    `json:"username"`
 	SubscribeDate    time.Time `json:"subscribeDate"`
 	RespondedQuizzes []int32   `json:"respondedQuizzes"`
+	PinnedQuizzes    []int32   `json:"pinnedQuizzes"`
 }
 
 // Private informations of a user
@@ -89,6 +91,7 @@ type PrivateUser struct {
 	Email            string    `json:"email"`
 	SubscribeDate    time.Time `json:"subscribeDate"`
 	RespondedQuizzes []int32   `json:"respondedQuizzes"`
+	PinnedQuizzes    []int32   `json:"pinnedQuizzes"`
 }
 
 // Get the public structure representing a User
@@ -98,6 +101,7 @@ func toPublicUser(u User) PublicUser {
 		Username:         u.Username,
 		SubscribeDate:    u.SubscribeDate,
 		RespondedQuizzes: u.RespondedQuizzes,
+		PinnedQuizzes:    u.PinnedQuizzes,
 	}
 }
 
@@ -109,6 +113,7 @@ func toPrivateUser(u User) PrivateUser {
 		Email:            u.Email,
 		SubscribeDate:    u.SubscribeDate,
 		RespondedQuizzes: u.RespondedQuizzes,
+		PinnedQuizzes:    u.PinnedQuizzes,
 	}
 }
 

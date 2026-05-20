@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import ISSPosition from './ISSPosition.jsx'
+import ISSPosition from '../iss/ISSPosition.jsx'
 import Quiz from '../quiz/Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 

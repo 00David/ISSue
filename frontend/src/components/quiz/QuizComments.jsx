@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDate } from "../utility/utils";
 import axios from 'axios';
 import { MessageSquare, Star, Calendar } from 'lucide-react';
 
@@ -24,16 +25,6 @@ function QuizComments({idQuiz}) {
         }
         getQuizComments();
     }, [idQuiz]);
-
-    // Format date helper
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", { 
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        });
-    };
 
     // Star rating display
     const StarRating = ({ note }) => {

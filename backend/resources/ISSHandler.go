@@ -84,72 +84,25 @@ func DeleteISSPosition(db *mongo.Database, ctx context.Context, date time.Time) 
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/resources/iss[/dd-mm-yyyy]" handler
+// "/api/resources/iss/dd-mm-yyyy" handler
 func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		// Only GET
+		if r.Method != http.MethodGet {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+			return
+		}
 
 		// gets the potential date parameter
 		dateStr := utility.GetSuffixParams("/api/resources/iss/", r)
 
-		if dateStr == "" {
-			fmt.Println("Request received on '/api/resources/iss'")
-			ISShandlerWithoutDate(db, w, r)
-		} else {
-			fmt.Println("Request received on '/api/resources/iss/date'")
-
-			// Checks if the parameter is a date
-			date, err := time.Parse(time.RFC3339, dateStr)
-			if err == nil {
-				ISShandlerWithDate(db, w, r, date)
-			}
-
-			if err != nil {
-				http.Error(w, "Invalid parameter format, must be a date", http.StatusBadRequest)
-				return
-			}
-		}
-
-	}
-}
-
-// "/api/resources/iss" handler
-func ISShandlerWithoutDate(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost: // POST
-
-		// Body decoding
-		var req ISSPosition
-		err := json.NewDecoder(r.Body).Decode(&req)
+		// Checks if the parameter is a date
+		date, err := time.Parse(time.RFC3339, dateStr)
 		if err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			http.Error(w, "Invalid parameter format, must be a date", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
-
-		// Creation of the ISS position in DB
-		date, err := CreateISSPosition(db, r.Context(), req.Timestamp, req.Latitude, req.Longitude)
-		if err != nil {
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{
-			"message": "iss position successfully created in DB",
-			"Date":    date,
-		})
-
-	default:
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
-// "/api/resources/iss/dd-mm-yyyy" handler
-func ISShandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
-	switch r.Method {
-	case http.MethodGet: // GET
 
 		// Getting the ISS position with this date in DB
 		issposition, err := GetISSPosition(db, r.Context(), date)
@@ -163,27 +116,5 @@ func ISShandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Reque
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(issposition)
-
-	case http.MethodDelete: // DELETE
-
-		// Deletion of the ISS position in DB
-		err := DeleteISSPosition(db, r.Context(), date)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No ISS Position for this date", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "iss position successfuly deleted from DB",
-		})
-
-	default:
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
 	}
 }

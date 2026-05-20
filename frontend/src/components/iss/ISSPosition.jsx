@@ -84,6 +84,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             {canShowCurrentPosition ? (
                 <div className="inline-flex bg-midissue rounded-full p-1 shadow-sm">
                     <button
+                        title="Switch to current ISS position"
                         onClick={switchToCurrent}
                         className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
                             currentIsSelected 
@@ -94,6 +95,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
                         🛰️ Current position
                     </button>
                     <button
+                        title="Switch to quiz ISS position"
                         onClick={switchToQuiz}
                         className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
                             !currentIsSelected 

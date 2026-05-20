@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from "react-router-dom";
 
-import ISSPosition from '../home/ISSPosition.jsx'
+import ISSPosition from '../iss/ISSPosition.jsx'
 import Quiz from './Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 

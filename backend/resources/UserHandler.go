@@ -93,6 +93,7 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 		Password:         password,
 		SubscribeDate:    subscribeDate,
 		RespondedQuizzes: make([]int32, 0),
+		PinnedQuizzes:    make([]int32, 0),
 	}
 	_, err = collection.InsertOne(ctx, user)
 	return id, err
@@ -163,6 +164,56 @@ func AddUserRespondedQuiz(db *mongo.Database, ctx context.Context,
 	return err
 }
 
+// Updates a User pinned quizzes indexes
+func UpdateUserPinnedQuizzes(db *mongo.Database, ctx context.Context,
+	id int32, newPinnedQuizzes []int32) error {
+	collection := db.Collection(collectionNameUsers)
+
+	filter := bson.D{{Key: "idUser", Value: id}}
+	update := bson.D{{Key: "$set",
+		Value: bson.D{{Key: "pinnedQuizzes", Value: newPinnedQuizzes}},
+	}}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Updates a User pinned quizzes indexes by adding a given new pinned index
+func AddUserPinnedQuiz(db *mongo.Database, ctx context.Context,
+	id int32, newPinnedQuizId int32) error {
+	collection := db.Collection(collectionNameUsers)
+
+	filter := bson.D{{Key: "idUser", Value: id}}
+	update := bson.D{
+		{Key: "$push", Value: bson.D{
+			{Key: "pinnedQuizzes", Value: newPinnedQuizId},
+		}},
+	}
+
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// Updates a User pinned quizzes indexes by deleting a given existing quiz index
+func DeleteUserPinnedQuiz(db *mongo.Database, ctx context.Context,
+	id int32, pinnedQuizId int32) error {
+
+	user, err := GetUser(db, ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// Create new slice without the target id
+	newPinnedQuizzes := make([]int32, 0, len(user.PinnedQuizzes))
+	for _, v := range user.PinnedQuizzes {
+		if v != pinnedQuizId {
+			newPinnedQuizzes = append(newPinnedQuizzes, v)
+		}
+	}
+
+	err = UpdateUserPinnedQuizzes(db, ctx, id, newPinnedQuizzes)
+	return err
+}
+
 // Deletes a User in DB for a given id
 func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 	collection := db.Collection(collectionNameUsers)
@@ -202,36 +253,35 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 
 // "/api/resources/users" handler
 func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost: // POST
 
-		// Body decoding
-		var req User
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		// Creation of the User in DB
-		id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password, time.Now().UTC())
-		if err != nil {
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{
-			"message": "user successfuly created in DB",
-			"idUser":  id,
-		})
-
-	default:
+	// Only POST
+	if r.Method != http.MethodPost {
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Body decoding
+	var req User
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	// Creation of the User in DB
+	id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password, time.Now().UTC())
+	if err != nil {
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]any{
+		"message": "user successfuly created in DB",
+		"idUser":  id,
+	})
 }
 
 // "/api/resources/users/id" handler
@@ -432,66 +482,133 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// "/api/resources/users/responded/id" handler
-func UsersRespondedQuizzesHandler(db *mongo.Database) http.HandlerFunc {
+type Pin struct {
+	IdQuiz int32 `json:"idQuiz"`
+}
+
+// "/api/resources/users/pin" handler
+func UsersPinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Request received on '/api/resources/users/pin'")
 
-		// gets the potential id parameter
-		idStr := utility.GetSuffixParams("/api/resources/users/responded/", r)
-
-		if idStr == "" {
-			http.Error(w, "Invalid request format, must provide an id", http.StatusBadRequest)
+		// Only POST
+		if r.Method != http.MethodPost {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 			return
-		} else {
-			fmt.Println("Request received on '/api/resources/users/responded/id'")
-			// Checks that the parameter is an integer
-			id64, err := strconv.ParseInt(idStr, 10, 32)
-			if err != nil {
-				http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
-				return
-			}
-			idUser := int32(id64)
-
-			// Get the user in DB
-			user, err := GetUser(db, r.Context(), idUser)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No User for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			respondedQuizzes := make([]int32, 0)
-			// For every response, get the quiz id for which it has responded
-			for _, idResponse := range user.RespondedQuizzes {
-
-				response, err := GetQuizResponses(db, r.Context(), idResponse)
-				if err != nil {
-					if err == mongo.ErrNoDocuments {
-						http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-						return
-					}
-					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				respondedQuizzes = append(respondedQuizzes, response.IdQuiz)
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(respondedQuizzes)
 		}
 
+		// Extract user ID from JWT
+		idUser, err := utility.ExtractUserIDFromRequest(r, jwtSecret)
+		if err != nil {
+			switch err {
+			case utility.ErrNoCookie:
+				http.Error(w, "No cookie", http.StatusBadRequest)
+				return
+			case utility.ErrInvalidToken:
+				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+				return
+			case utility.ErrInvalidClaims, utility.ErrMissingSub, utility.ErrInvalidSub:
+				http.Error(w, "Malformed token: "+err.Error(), http.StatusUnauthorized)
+				return
+			default:
+				http.Error(w, "Authentication error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Body decoding
+		var req Pin
+		err = json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		err = AddUserPinnedQuiz(db, r.Context(), idUser, req.IdQuiz)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No User for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " succesfully pinned",
+		})
+	}
+}
+
+type Unpin struct {
+	IdQuiz int32 `json:"idQuiz"`
+}
+
+// "/api/resources/users/unpin" handler
+func UsersUnpinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Request received on '/api/resources/users/unpin'")
+
+		// Only POST
+		if r.Method != http.MethodPost {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Extract user ID from JWT
+		idUser, err := utility.ExtractUserIDFromRequest(r, jwtSecret)
+		if err != nil {
+			switch err {
+			case utility.ErrNoCookie:
+				http.Error(w, "No cookie", http.StatusBadRequest)
+				return
+			case utility.ErrInvalidToken:
+				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+				return
+			case utility.ErrInvalidClaims, utility.ErrMissingSub, utility.ErrInvalidSub:
+				http.Error(w, "Malformed token: "+err.Error(), http.StatusUnauthorized)
+				return
+			default:
+				http.Error(w, "Authentication error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Body decoding
+		var req Unpin
+		err = json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Then delete the given quiz id from User's pinned quizzes
+		err = DeleteUserPinnedQuiz(db, r.Context(), idUser, req.IdQuiz)
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " succesfully unpinned",
+		})
 	}
 }
 
 // "/api/resources/users/leaderboard" handler
 func UsersLeaderboardHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		fmt.Println("Request received on '/api/resources/users/leaderboard'")
+
+		// Only GET
+		if r.Method != http.MethodGet {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+			return
+		}
 
 		// Get users in DB
 		users, err := GetAllUsers(db, r.Context())

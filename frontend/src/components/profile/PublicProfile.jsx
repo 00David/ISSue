@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { formatDate } from "../utility/utils";
 import { Star, Rocket, Trophy, Calendar, User } from "lucide-react";
 import { Link } from 'react-router-dom';
 
@@ -22,16 +23,6 @@ function PublicProfile({user, quizResponses}) {
     const averageNote = validNotes.length > 0
     ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
     : 0;
-
-    // Format date helper
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", { 
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        });
-    };
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">

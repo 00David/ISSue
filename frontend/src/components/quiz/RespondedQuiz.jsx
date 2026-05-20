@@ -1,11 +1,46 @@
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
-import { Star } from 'lucide-react';
+import { Star, Pin, PinOff } from 'lucide-react';
+import axios from 'axios';
 
 import Spinner from '../utility/Spinner.jsx';
 import Question from './Question.jsx'
 
-function RespondedQuiz({quiz, quizResponses, isHome}) {
+function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes, setPinnedQuizzes, showError}) {
+
+    const handlePin = async (idQuiz) => {
+        // Immediately add locally the newly pinned quiz id
+        setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
+        try {
+            await axios.post("/api/resources/users/pin", {
+                idQuiz
+            });
+        } catch (error) {
+            console.error("Error while pinning:\n", error.response.data);
+            showError("Failed to pin the quiz");
+            // In case of an error : ROLLBACK
+            setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
+        }
+    };
+
+    const handleUnpin = async (idQuiz) => {
+        // Immediately delete locally the unpined quiz id
+        setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
+        try {
+            await axios.post("/api/resources/users/unpin", {
+                idQuiz
+            });
+        } catch (error) {
+            console.error("Error while unpinning:\n", error.response.data);
+            showError("Failed to unpin the quiz");
+            // In case of an error : ROLLBACK
+            setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
+        }
+    };
+
+    const isPinned = (idQuiz) => {
+        return pinnedQuizzes?.includes(idQuiz);
+    };
 
     const selected = quizResponses.responses.map(
         (response) => response.numResponse
@@ -28,18 +63,49 @@ function RespondedQuiz({quiz, quizResponses, isHome}) {
             
             {/* Quiz infos header */}
             <div id="Home-quiz-header" className="flex flex-col justify-center items-center self-center">
-                <h3 className="text-center">
-                    {
-                        isHome ? "Today's quiz is about ..." 
-                        : formattedQuizDate+" quiz was about ..."
-                    } 
-                </h3>
+
+                <div className="flex flex-col items-center gap-3">
+                    {/* Pin button */}
+                    {connectedId != -1 ?
+                        <button
+                            title={isPinned(quiz.idQuiz) ? "Unpin quiz" : "Pin quiz"}
+                            onClick={() => {
+                                isPinned(quiz.idQuiz)
+                                    ? handleUnpin(quiz.idQuiz)
+                                    : handlePin(quiz.idQuiz);
+                            }}
+                            className="p-2 rounded-lg bg-orange-500/20 hover:bg-orange-800/30 transition-colors
+                                flex items-center justify-center group cursor-pointer"
+                        >
+                            {isPinned(quiz.idQuiz) ? (
+                                <>
+                                    <Pin className="w-4 h-4 text-orange-400 group-hover:hidden" fill="currentColor" />
+                                    <PinOff className="w-4 h-4 text-orange-400 hidden group-hover:block" fill="currentColor" />
+                                </>
+                            ) : (
+                                <Pin className="w-4 h-4 text-orange-400" />
+                            )}
+                        </button>
+                        : null
+                    }
+
+                    <h3 className="text-center">
+                        {
+                            isHome ? "Today's quiz is about ..." 
+                            : formattedQuizDate+" quiz was about ..."
+                        } 
+                    </h3>
+                </div>
+
                 {!quiz.ocean && <ReactCountryFlag 
                     countryCode={quiz.countryCode}
                     className = "w-[30%] h-[30%]"
                     title="US" svg  />}
+
                 <h2 className="text-center">{quiz.country} !</h2>
+
                 {quiz.region && <h3 className="text-center">and its "{quiz.region}" region !</h3>} 
+                
             </div>
 
             {/* Questions */}

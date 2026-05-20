@@ -254,97 +254,104 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 
 // "/api/resources/quizzes[?stats=true]" handler
 func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet: // GET
 
-		// gets the potential stats parameters
-		query := r.URL.Query()
-		stats := query.Get("stats")
+	// Only GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
 
-		if stats == "true" { // Quizzes with stats
-			quizzesWithStats, err := GetAllQuizzesWithStats(db, r.Context())
-			if err != nil {
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
+	// gets the potential stats parameters
+	query := r.URL.Query()
+	stats := query.Get("stats")
 
-			// Sort quizes by date (most recent first)
-			slices.SortFunc(quizzesWithStats, func(a, b QuizWithStats) int {
-				if a.Date.Before(b.Date) {
-					return 1
-				}
-				if a.Date.After(b.Date) {
-					return -1
-				}
-				return 0
-			})
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(quizzesWithStats)
-
-		} else { // Quizzes without stats
-			quizzes, err := GetAllQuizzes(db, r.Context())
-			if err != nil {
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			// Sort quizes by date (most recent first)
-			slices.SortFunc(quizzes, func(a, b Quiz) int {
-				if a.Date.Before(b.Date) {
-					return 1
-				}
-				if a.Date.After(b.Date) {
-					return -1
-				}
-				return 0
-			})
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(quizzes)
-		}
-
-	case http.MethodPost: // POST
-
-		// Body decoding
-		var req Quiz
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		// Creation of the Quiz in DB
-		id, err := CreateQuiz(db, r.Context(), time.Now().UTC(), req.Questions, req.Country, req.Region, req.CountryCode, req.Ocean)
+	if stats == "true" { // Quizzes with stats
+		quizzesWithStats, err := GetAllQuizzesWithStats(db, r.Context())
 		if err != nil {
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{
-			"message": "quiz successfuly created in DB",
-			"idQuiz":  id,
+		// Sort quizes by date (most recent first)
+		slices.SortFunc(quizzesWithStats, func(a, b QuizWithStats) int {
+			if a.Date.Before(b.Date) {
+				return 1
+			}
+			if a.Date.After(b.Date) {
+				return -1
+			}
+			return 0
 		})
 
-	default:
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quizzesWithStats)
+
+	} else { // Quizzes without stats
+		quizzes, err := GetAllQuizzes(db, r.Context())
+		if err != nil {
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Sort quizes by date (most recent first)
+		slices.SortFunc(quizzes, func(a, b Quiz) int {
+			if a.Date.Before(b.Date) {
+				return 1
+			}
+			if a.Date.After(b.Date) {
+				return -1
+			}
+			return 0
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quizzes)
 	}
 }
 
 // "/api/resources/quizzes/date" handler
 func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
-	switch r.Method {
-	case http.MethodGet: // GET
 
-		// Getting the Quiz with this date in DB
-		quiz, err := GetQuizWithDate(db, r.Context(), date)
+	// Only GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Getting the Quiz with this date in DB
+	quiz, err := GetQuizWithDate(db, r.Context(), date)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No Quiz for this date", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quiz)
+}
+
+// "/api/resources/quizzes/id[?stats=true]" handler
+func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
+
+	// Only GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// gets the potential stats parameters
+	query := r.URL.Query()
+	stats := query.Get("stats")
+
+	if stats == "true" {
+
+		// Getting the Quiz with this id with its stats in DB
+		quiz, err := GetQuizWithStats(db, r.Context(), id)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No Quiz for this date", http.StatusNotFound)
+				http.Error(w, "No Quiz for this id", http.StatusNotFound)
 				return
 			}
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
@@ -353,57 +360,53 @@ func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Requ
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(quiz)
 
-	default:
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
+	} else {
+
+		// Getting the Quiz with this id in DB
+		quiz, err := GetQuiz(db, r.Context(), id)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No Quiz for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quiz)
+
 	}
 }
 
-// "/api/resources/quizzes/id[?stats=true]" handler
-func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
-	switch r.Method {
-	case http.MethodGet: // GET
+// "/api/resources/quizzes/comments/id" handler
+func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Request received on '/api/resources/quizzes/comments/id'")
 
-		// gets the potential stats parameters
-		query := r.URL.Query()
-		stats := query.Get("stats")
-
-		if stats == "true" {
-
-			// Getting the Quiz with this id with its stats in DB
-			quiz, err := GetQuizWithStats(db, r.Context(), id)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(quiz)
-
-		} else {
-
-			// Getting the Quiz with this id in DB
-			quiz, err := GetQuiz(db, r.Context(), id)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(quiz)
-
+		// Only GET
+		if r.Method != http.MethodGet {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+			return
 		}
 
-	case http.MethodDelete: // DELETE
+		// gets the potential parameter
+		paramStr := utility.GetSuffixParams("/api/resources/quizzes/comments/", r)
 
-		// Deletion of the Quiz in DB
-		err := DeleteQuiz(db, r.Context(), id)
+		if paramStr == "" {
+			http.Error(w, "No quiz id given", http.StatusBadRequest)
+			return
+		}
+
+		// Checks if the parameter is an integer
+		id64, err := strconv.ParseInt(paramStr, 10, 32)
+		if err != nil {
+			http.Error(w, "Invalid parameter format, must be an integer", http.StatusBadRequest)
+			return
+		}
+		idQuiz := int32(id64)
+
+		// Get the Quiz with this id in DB
+		quiz, err := GetQuiz(db, r.Context(), idQuiz)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				http.Error(w, "No Quiz for this id", http.StatusNotFound)
@@ -413,101 +416,57 @@ func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "quiz successfuly deleted from DB",
-		})
+		comments := make([]Comment, 0)
+		// Search for responses to quizzes : get their informations for our comments
+		for _, idResponses := range quiz.RespondedQuizzes {
 
-	default:
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
-// "/api/resources/quizzes/comments/id" handler, with id being a quiz id.
-func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		// gets the potential parameter
-		paramStr := utility.GetSuffixParams("/api/resources/quizzes/comments/", r)
-
-		if paramStr == "" {
-			http.Error(w, "No quiz id given", http.StatusBadRequest)
-			return
-		} else {
-			fmt.Println("Request received on '/api/resources/quizzes/comments/id'")
-
-			// Checks if the parameter is an integer
-			id64, err := strconv.ParseInt(paramStr, 10, 32)
-			if err != nil {
-				http.Error(w, "Invalid parameter format, must be an integer", http.StatusBadRequest)
-				return
-			}
-			idQuiz := int32(id64)
-
-			// Get the Quiz with this id in DB
-			quiz, err := GetQuiz(db, r.Context(), idQuiz)
+			// Get the QuizResponses
+			responses, err := GetQuizResponses(db, r.Context(), idResponses)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz for this id", http.StatusNotFound)
+					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 					return
 				}
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			comments := make([]Comment, 0)
-			// Search for responses to quizzes : get their informations for our comments
-			for _, idResponses := range quiz.RespondedQuizzes {
-
-				// Get the QuizResponses
-				responses, err := GetQuizResponses(db, r.Context(), idResponses)
-				if err != nil {
-					if err == mongo.ErrNoDocuments {
-						http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-						return
-					}
-					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			// Get the User (for its username)
+			user, err := GetUser(db, r.Context(), responses.IdUser)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No User for this id", http.StatusNotFound)
 					return
 				}
-
-				// Get the User (for its username)
-				user, err := GetUser(db, r.Context(), responses.IdUser)
-				if err != nil {
-					if err == mongo.ErrNoDocuments {
-						http.Error(w, "No User for this id", http.StatusNotFound)
-						return
-					}
-					http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				// Create and add the comment to the resulting slice, if at least a note or a comment were given
-				if responses.Note > 0 || responses.Comment != "" {
-					comment := Comment{
-						IdUser:   responses.IdUser,
-						Username: user.Username,
-						Date:     responses.ResponseDate,
-						Note:     responses.Note,
-						Comment:  responses.Comment,
-					}
-					comments = append(comments, comment)
-				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
 			}
 
-			// Sort comments by date (most recent first)
-			slices.SortFunc(comments, func(a, b Comment) int {
-				if a.Date.Before(b.Date) {
-					return 1
+			// Create and add the comment to the resulting slice, if at least a note or a comment were given
+			if responses.Note > 0 || responses.Comment != "" {
+				comment := Comment{
+					IdUser:   responses.IdUser,
+					Username: user.Username,
+					Date:     responses.ResponseDate,
+					Note:     responses.Note,
+					Comment:  responses.Comment,
 				}
-				if a.Date.After(b.Date) {
-					return -1
-				}
-				return 0
-			})
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(comments)
+				comments = append(comments, comment)
+			}
 		}
+
+		// Sort comments by date (most recent first)
+		slices.SortFunc(comments, func(a, b Comment) int {
+			if a.Date.Before(b.Date) {
+				return 1
+			}
+			if a.Date.After(b.Date) {
+				return -1
+			}
+			return 0
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(comments)
 	}
 }

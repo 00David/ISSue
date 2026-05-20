@@ -10,12 +10,14 @@ function NavBar({connectedId, connectedUsername}) {
             {/* Home link */}
             <div id="navbar-1" className="flex items-center justify-center px-2">
                 <img
+                    title="Go to Home"
                     className="cursor-pointer w-11 h-7 flex justify-center items-center" 
                     src="/ISSue_logo_png.png"
                     alt="ISSue"
                     onClick={() => navigate("/")}>
                 </img>
                 <span 
+                    title="Go to Home"
                     className="cursor-pointer hover:text-gray-400"
                     onClick={() => navigate("/")}>
                     <strong>ISS</strong>ue
@@ -25,6 +27,7 @@ function NavBar({connectedId, connectedUsername}) {
             {/* Quizzes link */}
             <div id="navbar-2" className="absolute left-3/8 -translate-x-3/8">
                 <span 
+                    title="Go to Quizzes"
                     className="cursor-pointer hover:text-gray-400"
                     onClick={() => navigate("/quizzes")}>
                     Quizzes
@@ -34,6 +37,7 @@ function NavBar({connectedId, connectedUsername}) {
             {/* Leaderboard link */}
             <div id="navbar-3" className="absolute left-5/8 -translate-x-5/8">
                 <span 
+                    title="Go to Leaderboard"
                     className="cursor-pointer hover:text-gray-400"
                     onClick={() => navigate("/leaderboard")}>
                     Leaderboard
@@ -41,11 +45,15 @@ function NavBar({connectedId, connectedUsername}) {
             </div>
 
             {/* Connected (or not) icon + login/profile link depending on connected state */}
-            <div id="navbar-4" className="flex justify-center items-center px-2">
+            <div id="navbar-4" className="flex justify-center items-center px-2"
+                title={connectedId == -1 ? "Go to Login" : "Go to Profile"}
+            >
                 {connectedId == -1 ? 
-                    <LogIn className= "cursor-pointer  hover:text-gray-400" 
+                    <LogIn 
+                        className= "cursor-pointer  hover:text-gray-400" 
                         onClick={() => navigate("/login")}></LogIn>
-                    : <div className="cursor-pointer w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg"
+                    : <div 
+                        className="cursor-pointer w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg"
                         onClick={() => navigate("/profile/"+connectedId)}>
                         {connectedUsername.charAt(0).toUpperCase()}
                     </div>

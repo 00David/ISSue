@@ -126,215 +126,156 @@ func QuizResponsesHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc
 // "/api/resources/quiz-responses" handler
 func quizResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 	r *http.Request, jwtSecret []byte) {
-	switch r.Method {
-	case http.MethodPost: // POST
 
-		// Body decoding
-		var req QuizResponses
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		// Extract user ID from JWT
-		userID, err := utility.ExtractUserIDFromRequest(r, jwtSecret)
-		if err != nil {
-			switch err {
-			case utility.ErrNoCookie:
-				http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
-				return
-			case utility.ErrInvalidToken:
-				http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
-				return
-			case utility.ErrInvalidClaims, utility.ErrMissingSub, utility.ErrInvalidSub:
-				http.Error(w, "Malformed token: "+err.Error(), http.StatusUnauthorized)
-				return
-			default:
-				http.Error(w, "Authentication error", http.StatusInternalServerError)
-				return
-			}
-		}
-
-		// Creation of the QuizResponses in DB
-		idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, time.Now().UTC(), req.Note, req.Comment)
-		if err != nil {
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Update user's responded quizzes ids
-		err = AddUserRespondedQuiz(db, r.Context(), userID, idQuizR)
-		if err != nil {
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Update quiz responded quizzes ids
-		err = AddQuizRespondedQuiz(db, r.Context(), req.IdQuiz, idQuizR)
-		if err != nil {
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{
-			"message":         "quiz responses successfuly created in DB",
-			"idQuizResponses": idQuizR,
-		})
-
-	default:
+	// Only POST
+	if r.Method != http.MethodPost {
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Body decoding
+	var req QuizResponses
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	// Extract user ID from JWT
+	userID, err := utility.ExtractUserIDFromRequest(r, jwtSecret)
+	if err != nil {
+		switch err {
+		case utility.ErrNoCookie:
+			http.Error(w, "Missing authentication cookie", http.StatusUnauthorized)
+			return
+		case utility.ErrInvalidToken:
+			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+			return
+		case utility.ErrInvalidClaims, utility.ErrMissingSub, utility.ErrInvalidSub:
+			http.Error(w, "Malformed token: "+err.Error(), http.StatusUnauthorized)
+			return
+		default:
+			http.Error(w, "Authentication error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Creation of the QuizResponses in DB
+	idQuizR, err := CreateQuizResponses(db, r.Context(), req.IdQuiz, req.IdUser, req.Responses, time.Now().UTC(), req.Note, req.Comment)
+	if err != nil {
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Update user's responded quizzes ids
+	err = AddUserRespondedQuiz(db, r.Context(), userID, idQuizR)
+	if err != nil {
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Update quiz responded quizzes ids
+	err = AddQuizRespondedQuiz(db, r.Context(), req.IdQuiz, idQuizR)
+	if err != nil {
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]any{
+		"message":         "quiz responses successfuly created in DB",
+		"idQuizResponses": idQuizR,
+	})
 }
 
 // "/api/resources/quiz-responses?idquiz=’id1’&iduser=’id2’" handler
 func quizResponsesHandlerWithQuizAnsUser(db *mongo.Database, w http.ResponseWriter,
 	r *http.Request, idQuizStr string, idUserStr string) {
-	switch r.Method {
-	case http.MethodGet: // GET
 
-		// Verify the query parameters format
-		if idQuizStr == "" {
-			http.Error(w, "missing idquiz", http.StatusBadRequest)
-			return
-		}
-		if idUserStr == "" {
-			http.Error(w, "missing iduser", http.StatusBadRequest)
-			return
-		}
+	// Only GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
 
-		idQuiz64, err := strconv.ParseInt(idQuizStr, 10, 32)
-		if err != nil {
-			http.Error(w, "invalid idquiz", http.StatusBadRequest)
-			return
-		}
-		idUser64, err := strconv.ParseInt(idUserStr, 10, 32)
-		if err != nil {
-			http.Error(w, "invalid iduser", http.StatusBadRequest)
-			return
-		}
-		idQuiz := int32(idQuiz64)
-		idUser := int32(idUser64)
+	// Verify the query parameters format
+	if idQuizStr == "" {
+		http.Error(w, "missing idquiz", http.StatusBadRequest)
+		return
+	}
+	if idUserStr == "" {
+		http.Error(w, "missing iduser", http.StatusBadRequest)
+		return
+	}
 
-		// Get the User in DB
-		user, err := GetUser(db, r.Context(), idUser)
+	idQuiz64, err := strconv.ParseInt(idQuizStr, 10, 32)
+	if err != nil {
+		http.Error(w, "invalid idquiz", http.StatusBadRequest)
+		return
+	}
+	idUser64, err := strconv.ParseInt(idUserStr, 10, 32)
+	if err != nil {
+		http.Error(w, "invalid iduser", http.StatusBadRequest)
+		return
+	}
+	idQuiz := int32(idQuiz64)
+	idUser := int32(idUser64)
+
+	// Get the User in DB
+	user, err := GetUser(db, r.Context(), idUser)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No User for this id", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Search among responded quizzes if one has responded to the given quiz
+	for _, idRespondedQuizes := range user.RespondedQuizzes {
+		quizR, err := GetQuizResponses(db, r.Context(), idRespondedQuizes)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No User for this id", http.StatusNotFound)
+				http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
 				return
 			}
 			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Search among responded quizzes if one has responded to the given quiz
-		for _, idRespondedQuizes := range user.RespondedQuizzes {
-			quizR, err := GetQuizResponses(db, r.Context(), idRespondedQuizes)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			// Return the quiz responses if found
-			if quizR.IdQuiz == idQuiz {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(quizR)
-				return
-			}
+		// Return the quiz responses if found
+		if quizR.IdQuiz == idQuiz {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(quizR)
+			return
 		}
-
-		http.Error(w, "No Quiz responses for those user and quiz ids", http.StatusNotFound)
-		return
 	}
+
+	http.Error(w, "No Quiz responses for those user and quiz ids", http.StatusNotFound)
 }
 
 // "/api/resources/quiz-responses/id" handler
 func quizResponsesHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
-	switch r.Method {
-	case http.MethodGet: // GET
 
-		// Getting the QuizResponses with this id in DB
-		quizR, err := GetQuizResponses(db, r.Context(), id)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(quizR)
-
-	case http.MethodDelete: // DELETE
-
-		// Deletion of the QuizResponses in DB
-		err := DeleteQuizResponses(db, r.Context(), id)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "quiz responses successfuly deleted from DB",
-		})
-
-	case http.MethodPatch: // PATCH
-
-		// Body decoding
-		var req QuizResponses
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		// Update of the Quiz responses note in DB, if needed
-		if req.Note != 0 {
-			err := UpdateQuizResponsesNote(db, r.Context(), id, req.Note)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-		// Update of the Quiz responses comment in DB, if needed
-		if req.Comment != "" {
-			err := UpdateQuizResponsesComment(db, r.Context(), id, req.Comment)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "quiz responses information(s) successfuly updated in DB",
-		})
-
-	default:
+	// Only GET
+	if r.Method != http.MethodGet {
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Getting the QuizResponses with this id in DB
+	quizR, err := GetQuizResponses(db, r.Context(), id)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quizR)
 }

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDate } from "../utility/utils";
 import { Link } from 'react-router-dom';
-import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2 } from "lucide-react";
+import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2, Pin, PinOff } from "lucide-react";
 
-function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount, showError, showInfo}) {
+function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount, onUnpin, showError, showInfo}) {
     const navigate = useNavigate();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -30,16 +31,6 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
     const averageNote = validNotes.length > 0
     ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
     : 0;
-
-    // Format date helper
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", { 
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        });
-    };
 
     const handleSaveChanges = async () => {
         if (newPassword && newPassword != confirmPassword) {
@@ -279,6 +270,49 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                 </div>
             </div>
 
+            {/* Pinned Quizzes */}
+            <div className="bg-midissue rounded-xl p-6 shadow-lg">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                    Pinned Quizzes
+                </h2>
+
+                {!user.pinnedQuizzes || user.pinnedQuizzes.length === 0 ? (
+                    <p className="text-gray-400 text-center py-8">
+                        No pinned quizzes yet.
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {user.pinnedQuizzes.map((quizId) => (
+                            <div
+                                key={quizId}
+                                onClick={() => navigate("/quiz/" + quizId)}
+                                className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        title="Unpin"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // to prevent navigating to the quiz page
+                                            onUnpin(quizId);
+                                        }}
+                                        className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center group cursor-pointer"
+                                    >
+                                        <Pin className="w-5 h-5 text-orange-400 group-hover:hidden" fill="currentColor" />
+                                        <PinOff className="w-5 h-5 text-orange-400 hidden group-hover:block" fill="currentColor" />
+                                    </button>
+
+                                    <div>
+                                        <p className="text-white font-medium">
+                                            Quiz #{quizId}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* Recent Activity */}
             <div className="bg-midissue rounded-xl p-6 shadow-lg">
                 <h2 className="text-2xl font-bold text-white mb-4">Your Recent Activity</h2>
@@ -287,7 +321,13 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                     <p className="text-gray-400 text-center py-8">No quizzes completed yet.</p>
                 ) : (
                     <div className="space-y-3">
-                        {quizResponses.slice(0, 5).map((quizResponse, index) => {
+                        {[...quizResponses]
+                            .sort(
+                                (a, b) =>
+                                    new Date(b.responseDate) -
+                                    new Date(a.responseDate)
+                            )
+                            .slice(0, 5).map((quizResponse, index) => {
                             const score = quizResponse.responses.filter(r => r.correct).length;
                             const date = new Date(quizResponse.responseDate);
                             return (

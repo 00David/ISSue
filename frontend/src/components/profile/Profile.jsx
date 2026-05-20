@@ -72,6 +72,7 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
                 username: "",
             });
             navigate("/login");
+            showInfo("Logged out successfully");
 
         } catch (error) {
             console.error("Error while logging out:\n", error.response.data);
@@ -108,6 +109,29 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
         navigate("/");
     };
 
+    const handleUnpin = async (idQuiz) => {
+        // Immediately delete locally the unpined quiz id
+        setUser(prev => ({
+            ...prev, // copy the previous user infos
+            pinnedQuizzes: prev.pinnedQuizzes.filter(id => id != idQuiz) // for pinnedQuizzes, overwrite it with the same array without idQuiz
+        }));
+
+        try {
+            await axios.post("/api/resources/users/unpin", {
+                idQuiz
+            });
+        } catch (error) {
+            console.error("Error while unpinning:\n", error.response.data);
+            showError("Failed to unpin the quiz");
+
+            // In case of an error : ROLLBACK
+            setUser(prev => ({
+                ...prev,
+                pinnedQuizzes: [...prev.pinnedQuizzes, idQuiz]
+            }));
+        }
+    };
+
     if (loading) {
         return (
             <div id="Profile-display" className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -130,6 +154,7 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
                     onLogout={handleLogout}
                     onUpdateUser={handleUpdateUser}
                     onDeleteAccount={handleDeleteAccount}
+                    onUnpin={handleUnpin}
                     showError={showError} 
                     showInfo={showInfo}
                 />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, X } from 'lucide-react';
 
@@ -6,22 +6,22 @@ function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup,
     score, note, setNote, comment, setComment, showInfo}) {
     const navigate = useNavigate();
 
-    // Some comments...
-    const boss = ["Perfect score.", "You crushed it.", "Absolutely flawless.", "Top-tier performance.", "Mastered completely."];
-    const almostGotIt = ["So close to perfect.", "Great job overall.", "Almost flawless.", "Very strong result.", "You nearly nailed it."];
-    const couldBeBetter = ["Not bad at all.", "Decent attempt.", "You're getting there.", "Some mistakes, but solid.", "Could be better."];
-    const meh = ["That was rough.", "Needs more practice.", "Not your best run.", "A bit messy.", "Keep trying."];
-    const how = ["How did this happen?", "Did you guess everything?", "That was impressive... negatively.", "Maybe retry this one.", "At least you tried."];
+    const randomComment = useMemo(() => {
+        const boss = ["Perfect score.", "You crushed it.", "Absolutely flawless.", "Top-tier performance.", "Mastered completely."];
+        const almostGotIt = ["So close to perfect.", "Great job overall.", "Almost flawless.", "Very strong result.", "You nearly nailed it."];
+        const couldBeBetter = ["Not bad at all.", "Decent attempt.", "You're getting there.", "Some mistakes, but solid.", "Could be better."];
+        const meh = ["That was rough.", "Needs more practice.", "Not your best run.", "A bit messy.", "Keep trying."];
+        const how = ["How did this happen?", "Did you guess everything?", "That was impressive... negatively.", "Maybe retry this one.", "At least you tried."];
 
-    const [randomCommentOnNote] = useState(() => {
+        // eslint-disable-next-line react-hooks/purity
         const randomSentence = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        
-        if (score == 10) return randomSentence(boss);
-        if (score >= 7) return randomSentence(almostGotIt);
-        if (score >= 5) return randomSentence(couldBeBetter);
-        if (score >= 3) return randomSentence(meh);
+
+        if (score === 10) return randomSentence(boss);
+        else if (score >= 7) return randomSentence(almostGotIt);
+        else if (score >= 5) return randomSentence(couldBeBetter);
+        else if (score >= 3) return randomSentence(meh);
         return randomSentence(how);
-    });
+    }, [score]);
 
     const setStarNote = (numStar) => {
         if (numStar == note) {
@@ -62,7 +62,7 @@ function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup,
                 <div className="text-center mb-4">
                     <h2>Your score :</h2>
                     <h1>{score}/10</h1>
-                    <p>{randomCommentOnNote}</p>
+                    <p>{randomComment}</p>
                 </div>
 
                 {/* Stars */}

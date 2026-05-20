@@ -16,6 +16,8 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
     const [quiz, setQuiz] = useState(null);
     const [quizResponses, setQuizResponses] = useState(null);
 
+    const [pinnedQuizzes, setPinnedQuizzes] = useState([]); // ids of user pinned quizzes, filled only when connected
+
     const [selectedCached, setSelectedCached] = useState([]);
     const [noteCached, setNoteCached] = useState(0);
     const [commentCached, setCommentCached] = useState("");
@@ -74,7 +76,11 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
 
     useEffect(() => {
         const fetchQuizResponses = async () => {
-            if (connectedId == -1 || !quiz){
+            if (!quiz){
+                return;
+            }
+
+            if (connectedId == -1){
                 setLoading(false);
                 return;
             }
@@ -103,6 +109,22 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
         fetchQuizResponses();
     }, [quiz, connectedId, loading]);
 
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (connectedId == -1) {
+                return;
+            }
+
+            try {
+                const response = await axios.get("/api/resources/users/"+connectedId);
+                setPinnedQuizzes(response.data.pinnedQuizzes);
+            } catch (error) {
+                console.error("Error while fetching connected user pinned quizzes:\n", error.response?.data);
+            }
+        };
+        fetchUserData();
+    }, [connectedId]);
+
     const onReload = () => {
         setLoading(true);
     }
@@ -129,9 +151,13 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
         <>
             {hasResponded ? (
                 <RespondedQuiz 
+                    connectedId={connectedId}
                     quiz={quiz} 
                     quizResponses={quizResponses}
                     isHome={isHome}
+                    pinnedQuizzes={pinnedQuizzes}
+                    setPinnedQuizzes={setPinnedQuizzes}
+                    showError={showError}
                 />
             ) : (
                 <TodoQuiz 
@@ -143,6 +169,8 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
                     showResultsCached={showResultsCached}
                     onReload={onReload}
                     isHome={isHome}
+                    pinnedQuizzes={pinnedQuizzes}
+                    setPinnedQuizzes={setPinnedQuizzes}
                     showError={showError} 
                     showInfo={showInfo}
                 />

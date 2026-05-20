@@ -3,7 +3,7 @@ import { Info } from 'lucide-react';
 
 export const InfoPopup = ({ message, onClose }) => {
 	return (
-		<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-1002">
+		<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-1003">
 			<div className="relative bg-midissue rounded-xl shadow-xl max-w-md w-full overflow-hidden
 				animate-[slideDown_0.3s_ease-out]">
 

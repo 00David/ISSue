@@ -87,7 +87,7 @@ function App() {
 			{info.showInfo && (<InfoPopup message={info.infoMessage} onClose={onCloseInfo}></InfoPopup>)}
 			<Routes>
 				<Route path="/" element={<Home connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Home page */}
-				<Route path="/quizzes" element={<Quizzes connectedId={connected.id} />} /> {/* Page displaying available quizzes */}
+				<Route path="/quizzes" element={<Quizzes connectedId={connected.id} showError={showError} />} /> {/* Page displaying available quizzes */}
 				<Route path="/quiz/:id" element={<QuizPage connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Page displaying a specific quiz */}
 				<Route path="/leaderboard" element={<LeaderboardPage />} /> {/* Page displaying leaderboard of ISSue users */}
 				<Route path="/login" element={<Login connectedId={connected.id} setConnected={setConnected} showError={showError} />} /> {/* Login page */}

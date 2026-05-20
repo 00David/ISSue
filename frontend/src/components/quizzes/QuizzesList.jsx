@@ -1,15 +1,47 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDate } from "../utility/utils";
 import ReactCountryFlag from "react-country-flag";
-import { Star, ChevronUp, ChevronDown } from 'lucide-react';
+import { Star, ChevronUp, ChevronDown, Pin, PinOff } from 'lucide-react';
+import axios from 'axios';
 
-function QuizzesList({quizzes, respondedQuizzes}) {
+function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, setPinnedQuizzes, showError}) {
     const navigate = useNavigate();
 
     const [searchText, setSearchText] = useState("");
     const [searchDate, setSearchDate] = useState("");
     const [sortColumn, setSortColumn] = useState("date"); // Column currently sorted, by default desc date
     const [sortDirection, setSortDirection] = useState("desc"); // "asc" or "desc"
+
+    const handlePin = async (idQuiz) => {
+        // Immediately add locally the newly pinned quiz id
+        setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
+        try {
+            await axios.post("/api/resources/users/pin", {
+                idQuiz
+            });
+        } catch (error) {
+            console.error("Error while pinning:\n", error.response.data);
+            showError("Failed to pin the quiz");
+            // In case of an error : ROLLBACK
+            setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
+        }
+    };
+
+    const handleUnpin = async (idQuiz) => {
+        // Immediately delete locally the unpined quiz id
+        setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
+        try {
+            await axios.post("/api/resources/users/unpin", {
+                idQuiz
+            });
+        } catch (error) {
+            console.error("Error while unpinning:\n", error.response.data);
+            showError("Failed to unpin the quiz");
+            // In case of an error : ROLLBACK
+            setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
+        }
+    };
 
     // Filtering function
     const filteredQuizzes = quizzes.filter(quiz => {
@@ -79,14 +111,12 @@ function QuizzesList({quizzes, respondedQuizzes}) {
         return 0;
     });
 
-    // Format date helper
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", { 
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        });
+    const isPinned = (idQuiz) => {
+        return pinnedQuizzes?.includes(idQuiz);
+    };
+
+    const isResponded = (idQuiz) => {
+        return respondedQuizzes?.includes(idQuiz);
     };
 
     return (
@@ -130,6 +160,7 @@ function QuizzesList({quizzes, respondedQuizzes}) {
             {/* Tab header with sort buttons */}
             <div className="bg-lightissue rounded-t-lg text-white font-semibold">
                 <div className="grid grid-cols-7 gap-4 px-4 py-3">
+                    <div className="text-center">Action</div>
                     <button 
                         onClick={() => handleSort('date')}
                         className="flex items-center gap-1 hover:text-gray-200 transition-colors cursor-pointer"
@@ -208,7 +239,6 @@ function QuizzesList({quizzes, respondedQuizzes}) {
                                 : (<ChevronDown size={16} className="text-white" />)
                         }
                     </button>
-                    <div className="text-center">Action</div>
                 </div>
             </div>
 
@@ -225,6 +255,47 @@ function QuizzesList({quizzes, respondedQuizzes}) {
                             className="grid grid-cols-7 gap-4 px-4 py-3
                                      transition-colors duration-150"
                         >
+
+                            {/* Quiz action buttons */}
+                            <div className="flex items-center justify-center gap-2">
+
+                                {/* Pin button */}
+                                {connectedId != -1 ?
+                                    <button
+                                        title={isPinned(quiz.idQuiz) ? "Unpin quiz" : "Pin quiz"}
+                                        onClick={() => {
+                                            isPinned(quiz.idQuiz)
+                                                ? handleUnpin(quiz.idQuiz)
+                                                : handlePin(quiz.idQuiz);
+                                        }}
+                                        className="p-2 rounded-lg bg-orange-500/20 hover:bg-orange-800/30 transition-colors
+                                            flex items-center justify-center group cursor-pointer"
+                                    >
+                                        {isPinned(quiz.idQuiz) ? (
+                                            <>
+                                                <Pin className="w-4 h-4 text-orange-400 group-hover:hidden" fill="currentColor" />
+                                                <PinOff className="w-4 h-4 text-orange-400 hidden group-hover:block" fill="currentColor" />
+                                            </>
+                                        ) : (
+                                            <Pin className="w-4 h-4 text-orange-400" />
+                                        )}
+                                    </button>
+                                    : null
+                                }
+
+                                {/* Navigation button */}
+                                <button
+                                    onClick={() => goToQuiz(quiz.idQuiz)}
+                                    className={`px-4 py-1 rounded-lg transition-all duration-200 
+                                            text-sm font-medium cursor-pointer ${
+                                        isResponded(quiz.idQuiz)
+                                            ? "bg-green-600 hover:bg-green-800 text-white"
+                                            : "bg-lightissue hover:bg-[#262841] text-gray-200"
+                                    }`}
+                                >
+                                    {isResponded(quiz.idQuiz) ? "See your results" : "View Quiz"}
+                                </button>
+                            </div>
 
                             {/* Quiz date */}
                             <div className="flex items-center text-gray-300">
@@ -273,22 +344,6 @@ function QuizzesList({quizzes, respondedQuizzes}) {
                                     : null
                                 }
                             </div>
-
-                            {/* Quiz navigation button */}
-                            <div className="flex items-center justify-center">
-                                <button
-                                    onClick={() => goToQuiz(quiz.idQuiz)}
-                                    className={`px-4 py-1 rounded-lg transition-all duration-200 
-                                            text-sm font-medium cursor-pointer ${
-                                        respondedQuizzes.includes(quiz.idQuiz)
-                                            ? "bg-green-600 hover:bg-green-800 text-white"
-                                            : "bg-lightissue hover:bg-[#262841] text-gray-200"
-                                    }`}
-                                >
-                                    {respondedQuizzes.includes(quiz.idQuiz) ? "See your results" : "View Quiz"}
-                                </button>
-                            </div>
-                            
                         </div>
                     ))
                 )}

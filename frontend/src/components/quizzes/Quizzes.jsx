@@ -5,10 +5,11 @@ import Spinner from "../utility/Spinner.jsx";
 import QuizzesList from "./QuizzesList.jsx";
 import QuizzesMap from "./QuizzesMap.jsx";
 
-function Quizzes({connectedId}) {
+function Quizzes({connectedId, showError}) {
 
     const [quizzes, setQuizzes] = useState([]);
-    const [respondedQuizzes, setRespondedQuizzes] = useState([]); // ids of responded quizzes, filled only when connected
+    const [respondedQuizzes, setRespondedQuizzes] = useState([]); // ids of user responded quizzes, filled only when connected
+    const [pinnedQuizzes, setPinnedQuizzes] = useState([]); // ids of user pinned quizzes, filled only when connected
     const [selectedView, setSelectedView] = useState("list"); // "list" or "map"
     const [loading, setLoading] = useState(true);
 
@@ -64,10 +65,11 @@ function Quizzes({connectedId}) {
 
         const fetchUserData = async () => {
             try {
-                const response = await axios.get("/api/resources/users/responded/"+connectedId);
-                setRespondedQuizzes(response.data);
+                const response = await axios.get("/api/resources/users/"+connectedId);
+                setRespondedQuizzes(response.data.respondedQuizzes);
+                setPinnedQuizzes(response.data.pinnedQuizzes);
             } catch (error) {
-                console.error("Error while fetching connected user responded quizzes:\n", error.response?.data);
+                console.error("Error while fetching connected user quizzes infos:\n", error.response?.data);
             } finally {
                 setLoading(false);
             }
@@ -93,6 +95,7 @@ function Quizzes({connectedId}) {
             {/* Showing toggle buttons */}
             <div className="inline-flex bg-midissue rounded-full p-1 shadow-sm">
                 <button
+                    title="Switch to quizzes list"
                     onClick={() => setSelectedView("list")}
                     className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
                         selectedView === "list"
@@ -103,6 +106,7 @@ function Quizzes({connectedId}) {
                     📋 List View
                 </button>
                 <button
+                    title="Switch to quizzes map"
                     onClick={() => setSelectedView("map")}
                     className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
                         selectedView === "map"
@@ -117,8 +121,12 @@ function Quizzes({connectedId}) {
             {/* Affichage conditionnel */}
             {selectedView === "list" ? (
                 <QuizzesList 
+                    connectedId={connectedId}
                     quizzes={quizzes} 
                     respondedQuizzes={respondedQuizzes}
+                    pinnedQuizzes={pinnedQuizzes}
+                    setPinnedQuizzes={setPinnedQuizzes}
+                    showError={showError}
                 />
             ) : (
                 <QuizzesMap 
