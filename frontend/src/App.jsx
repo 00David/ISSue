@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-axios.defaults.withCredentials = true;
+import api from "./api/axios";
 
 import Home from './components/home/Home.jsx';
 import Quizzes from "./components/quizzes/Quizzes.jsx";
@@ -49,7 +48,7 @@ function App() {
 		 */
 		const fetchConnected = async () => {
 			try {
-				const response = await axios.get('/api/authentification/me');
+				const response = await api.get('/api/authentification/me');
 				if (response.data.id != -1 && response.data.user != "") {
 					setConnected({ 
 						id: response.data.id, 

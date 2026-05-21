@@ -9,11 +9,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     server: {
-      port: parseInt(env.VITE_FRONTEND_PORT) || 5170,
-      host: env.VITE_HOST || 'localhost',
-      proxy: {
-        '/api': `http://${env.VITE_HOST || 'localhost'}:${env.VITE_BACKEND_PORT || 4572}`
-      }
+      port: parseInt(env.PORT) || 5170,
+      host: env.VITE_HOST || 'localhost'
     }
   }
 })

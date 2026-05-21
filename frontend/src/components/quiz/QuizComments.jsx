@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatDate } from "../utility/utils";
-import axios from 'axios';
 import { MessageSquare, Star, Calendar } from 'lucide-react';
+import { formatDate } from "../utility/utils";
+import api from "../../api/axios";
 
 import Spinner from '../utility/Spinner.jsx';
 
@@ -26,7 +26,7 @@ function QuizComments({idQuiz}) {
          */
         const fetchQuizComments = async () => {
             try {
-                const response = await axios.get("/api/resources/quizzes/comments/"+idQuiz);
+                const response = await api.get("/api/resources/quizzes/comments/"+idQuiz);
                 setComments(response.data);
             } catch (error) {
                 console.error("Error while fetching quiz comments:\n", error.response.data);

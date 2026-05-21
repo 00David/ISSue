@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from "../../api/axios";
 
 import NotFound from '../notfound/NotFound.jsx';
 import Spinner from '../utility/Spinner.jsx';
@@ -54,13 +54,13 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
         const fetchProfileData = async () => {
             try {
                 // Fetch user infos (partially if public infos, otherwise all infos if private)
-                const userInfos = await axios.get("/api/resources/users/"+id);
+                const userInfos = await api.get("/api/resources/users/"+id);
                 setUser(userInfos.data);
 
                 // Fetch all user responses for this user
                 const userResponsesPromises = userInfos.data.userResponses.map(async (idUserR) => {
                     try {
-                        const response = await axios.get("/api/resources/user-responses/"+idUserR);
+                        const response = await api.get("/api/resources/user-responses/"+idUserR);
                         return response.data;
                     } catch (error) {
                         console.error("Error fetching responses "+idUserR+"\n", error.response.data);
@@ -88,7 +88,7 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
      */
     const handleLogout = async () => {
         try {
-            await axios.post("/api/authentification/logout");
+            await api.post("/api/authentification/logout");
             setConnected({
                 id: -1,
                 username: "",
@@ -123,10 +123,10 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
             throw new Error("Invalid email format");
         }
 
-        await axios.patch("/api/resources/users/"+id, updates);
+        await api.patch("/api/resources/users/"+id, updates);
         
         // Refresh user data
-        const userInfos = await axios.get("/api/resources/users/"+id);
+        const userInfos = await api.get("/api/resources/users/"+id);
         setUser(userInfos.data);
     };
 
@@ -134,10 +134,10 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
      * Deletes the current user account, logs him out, and redirects him to the login page.
      */
     const handleDeleteAccount = async () => {
-        await axios.delete("/api/resources/users/"+id);
+        await api.delete("/api/resources/users/"+id);
             
         // Logout after deletion
-        await axios.post("/api/authentification/logout");
+        await api.post("/api/authentification/logout");
         setConnected({
             id: -1,
             username: "",
@@ -161,7 +161,7 @@ function Profile({connectedId, setConnected, showError, showInfo}) {
         }));
 
         try {
-            await axios.post("/api/resources/users/unpin", {
+            await api.post("/api/resources/users/unpin", {
                 idQuiz
             });
         } catch (error) {

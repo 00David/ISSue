@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Medal } from "lucide-react";
-import axios from "axios";
+import api from "../../api/axios";
+
 import Spinner from "../utility/Spinner.jsx";
 
 /**
@@ -22,7 +23,7 @@ function Leaderboard() {
          */
         const fetchLeaderboard = async () => {
             try {
-                const response = await axios.get("/api/resources/users/leaderboard");
+                const response = await api.get("/api/resources/users/leaderboard");
                 setUsers(response.data);
             } catch (error) {
                 console.error("Error while fetching leaderboard:\n", error.response?.data);

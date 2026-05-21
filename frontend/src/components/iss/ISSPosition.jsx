@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import axios from "axios";
+import api from "../../api/axios";
 
 import Spinner from "../utility/Spinner.jsx";
 import RecenterMap from "./RecenterMap.jsx"
@@ -50,7 +50,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // CURRENT ISS (polling)
             if (canShowCurrentPosition) {
                 try {
-                    const response = await axios.get("/api/external/iss");
+                    const response = await api.get("/api/external/iss");
                     const { latitude, longitude } = response.data;
                     setISSCurrentPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {
@@ -62,7 +62,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
             // QUIZ ISS (one shot, on first loading)
             if (firstLoad && ISSQuizDate) {
                 try {
-                    const response = await axios.get("/api/resources/iss/"+encodeURIComponent(ISSQuizDate));
+                    const response = await api.get("/api/resources/iss/"+encodeURIComponent(ISSQuizDate));
                     const { latitude, longitude } = response.data;
                     setISSQuizPosition([parseFloat(latitude), parseFloat(longitude)]);
                 } catch (error) {

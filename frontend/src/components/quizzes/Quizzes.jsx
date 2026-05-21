@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/axios";
 
 import Spinner from "../utility/Spinner.jsx";
 import QuizzesList from "./QuizzesList.jsx";
@@ -69,7 +69,7 @@ function Quizzes({connectedId, showError}) {
             // If not in cache, fetch the quizzes
             if (!gotQuizFromCache) {
                 try {
-                    const response = await axios.get("/api/resources/quizzes?stats=true");
+                    const response = await api.get("/api/resources/quizzes?stats=true");
                     setQuizzes(response.data);
                     
                     const todayDate = new Date().toISOString();
@@ -97,7 +97,7 @@ function Quizzes({connectedId, showError}) {
          */
         const fetchRespondedQuizzes = async () => {
             try {
-                const response = await axios.get("/api/resources/users/responded/"+connectedId);
+                const response = await api.get("/api/resources/users/responded/"+connectedId);
                 setRespondedQuizzes(response.data);
             } catch (error) {
                 console.error("Error while fetching connected user responded quizzes:\n", error.response?.data);
@@ -110,7 +110,7 @@ function Quizzes({connectedId, showError}) {
          */
         const fetchPinnedQuizzes = async () => {
             try {
-                const response = await axios.get("/api/resources/users/"+connectedId);
+                const response = await api.get("/api/resources/users/"+connectedId);
                 setPinnedQuizzes(response.data.pinnedQuizzes);
             } catch (error) {
                 console.error("Error while fetching connected user pinned quizzes:\n", error.response?.data);

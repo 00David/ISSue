@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
-import axios from 'axios';
+import api from "../../api/axios";
 
 import Spinner from '../utility/Spinner.jsx';
 import Question from './Question.jsx'
@@ -154,7 +154,7 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
             try {
                 const todayDate = new Date().toISOString();
                 const parameter = isHome ? encodeURIComponent(todayDate) : idQuiz;
-                const quizFetched = await axios.get("/api/resources/quizzes/"+parameter);
+                const quizFetched = await api.get("/api/resources/quizzes/"+parameter);
 
                 setQuiz(quizFetched.data);
                 setSelectedCached(Array(quizFetched.data.questions.length).fill(-1));
@@ -177,7 +177,7 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
          */
         const fetchUserResponses = async (quizId) => {
             try {
-                const fetchedUserResp = await axios.get("/api/resources/user-responses?idquiz="+quizId+"&iduser="+connectedId);
+                const fetchedUserResp = await api.get("/api/resources/user-responses?idquiz="+quizId+"&iduser="+connectedId);
                 return fetchedUserResp.data;
             } catch (error) {
                 // 404 = quiz not yet responded
@@ -195,7 +195,7 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
          */
         const fetchPinnedQuizzes = async () => {
             try {
-                const response = await axios.get("/api/resources/users/"+connectedId);
+                const response = await api.get("/api/resources/users/"+connectedId);
                 return response.data.pinnedQuizzes;
             } catch (error) {
                 console.error("Error while fetching connected user pinned quizzes:\n", error.response?.data);

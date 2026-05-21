@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import ProgressBar from '../utility/ProgressBar.jsx';
 import ReactCountryFlag from "react-country-flag";
 import { Pin, PinOff } from 'lucide-react';
-import axios from 'axios';
+import api from "../../api/axios";
 
 import Spinner from '../utility/Spinner.jsx';
 import Question from './Question.jsx'
@@ -66,7 +66,7 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
         // Immediately add locally the newly pinned quiz id
         setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
         try {
-            await axios.post("/api/resources/users/pin", {
+            await api.post("/api/resources/users/pin", {
                 idQuiz
             });
         } catch (error) {
@@ -91,7 +91,7 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
         // Immediately delete locally the unpined quiz id
         setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
         try {
-            await axios.post("/api/resources/users/unpin", {
+            await api.post("/api/resources/users/unpin", {
                 idQuiz
             });
         } catch (error) {
@@ -183,7 +183,7 @@ function TodoQuiz({connectedId, quiz, selectedCached, noteCached, commentCached,
         };
 
         try {
-            await axios.post("/api/resources/user-responses",
+            await api.post("/api/resources/user-responses",
                 payload
             );
             // Quiz cache cleaned

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from "../../api/axios";
 
 /**
  * Renders the login page, allowing to enter its username and password.
@@ -34,13 +34,13 @@ function Login({connectedId, setConnected, showError}) {
 
         try {
             // Login
-            await axios.post("/api/authentification/login", {
+            await api.post("/api/authentification/login", {
                 username,
                 password
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get("/api/authentification/me");
+            const res = await api.get("/api/authentification/me");
             setConnected({ // triggers a redirection to the user profile page (via local useEffect)
                 id: res.data.id,
                 username: username

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDate } from "../utility/utils";
 import ReactCountryFlag from "react-country-flag";
 import { Star, ChevronUp, ChevronDown, Pin, PinOff } from 'lucide-react';
-import axios from 'axios';
+import api from "../../api/axios";
 
 /**
  * Renders a searchable, sortable table of quizzes.
@@ -49,7 +49,7 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         // Immediately add locally the newly pinned quiz id
         setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
         try {
-            await axios.post("/api/resources/users/pin", {
+            await api.post("/api/resources/users/pin", {
                 idQuiz
             });
         } catch (error) {
@@ -74,7 +74,7 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         // Immediately delete locally the unpined quiz id
         setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
         try {
-            await axios.post("/api/resources/users/unpin", {
+            await api.post("/api/resources/users/unpin", {
                 idQuiz
             });
         } catch (error) {

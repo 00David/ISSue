@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from "../../api/axios";
 
 /**
  * Renders the sign up page, allowing to enter its username, email and password.
@@ -31,14 +31,14 @@ function Signup({connectedId, setConnected, showError}) {
 
         try {
             // Signup
-            await axios.post("/api/authentification/signup", {
+            await api.post("/api/authentification/signup", {
                 username,
                 email,
                 password
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get("/api/authentification/me");
+            const res = await api.get("/api/authentification/me");
             setConnected({ // triggers a redirection to the user profile page (via local useEffect)
                 id: res.data.id,
                 username: username

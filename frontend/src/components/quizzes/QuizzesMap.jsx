@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import axios from "axios";
+import api from "../../api/axios";
 import L from "leaflet";
 
 import Spinner from "../utility/Spinner.jsx";
@@ -77,7 +77,7 @@ function QuizzesMap({quizzes}) {
                     const quizDate = new Date(quiz.date).toISOString();
                     
                     try {
-                        const response = await axios.get(`/api/resources/iss/${encodeURIComponent(quizDate)}`);
+                        const response = await api.get(`/api/resources/iss/${encodeURIComponent(quizDate)}`);
                         positionsMap.set(quizDate, {
                             latitude: parseFloat(response.data.latitude),
                             longitude: parseFloat(response.data.longitude),

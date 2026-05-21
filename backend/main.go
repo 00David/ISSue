@@ -11,7 +11,7 @@ import (
 	"github.com/00David/ISSue/backend/external_apis"
 	"github.com/00David/ISSue/backend/resources"
 	"github.com/00David/ISSue/backend/utility"
-	"github.com/joho/godotenv"
+	"github.com/joho/godotenv" // for local environment variables import
 )
 
 // Entry point for the backend :
@@ -79,7 +79,6 @@ func main() {
 	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
-	log.Fatal(
-		http.ListenAndServe(addr, nil),
-	)
+	handler := utility.EnableCORS(http.DefaultServeMux)
+	log.Fatal(http.ListenAndServe(addr, handler))
 }
