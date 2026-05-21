@@ -22,15 +22,12 @@ import (
 func main() {
 	godotenv.Load() // loads local .env file if present
 
-	port := os.Getenv("BACKEND_PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "4572"
 	}
 
 	host := os.Getenv("HOST")
-	if host == "" {
-		host = "localhost"
-	}
 	addr := host + ":" + port
 
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -82,5 +79,7 @@ func main() {
 	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
-	http.ListenAndServe(addr, nil)
+	log.Fatal(
+		http.ListenAndServe(addr, nil),
+	)
 }
