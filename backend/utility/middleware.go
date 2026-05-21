@@ -9,7 +9,7 @@ func EnableCORS(next http.Handler) http.Handler {
 		origin := r.Header.Get("Origin")
 
 		// Origins authorized
-		if origin == "http://localhost:5170" {
+		if origin == "http://localhost:5170" || origin == "https://issue-odz6.onrender.com" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 		}
