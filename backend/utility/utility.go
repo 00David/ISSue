@@ -62,7 +62,8 @@ func CreateTokenAndCookie(w http.ResponseWriter, jwtSecret []byte, idUser int32,
 		Value:    tokenString,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		Expires:  expirationTime,
 	})
 
