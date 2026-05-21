@@ -49,6 +49,14 @@ func GenerateQuizHandler(db *mongo.Database, geminiKey string) http.HandlerFunc 
 			return
 		}
 
+		// Verifies that a quiz for today does not already exist
+		_, err := resources.GetQuizWithDate(db, r.Context(), time.Now().UTC())
+		if err == nil { // if it found a quiz, wihout getting an error
+			http.Error(w, "Error : a quiz already exists for the current date", http.StatusConflict)
+			return
+		}
+		err = nil
+
 		// Gets the ISSPosition in database for the current day
 		// if there is no ISSPosition, it creates a new ISSPosition, later inserted into the database if the quiz is successfully created
 		issPosition, err := resources.GetISSPosition(db, r.Context(), time.Now())
