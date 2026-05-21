@@ -15,9 +15,14 @@ import NavBar from "./components/navbar/NavBar.jsx";
 import ErrorPopup from "./components/popup/ErrorPopup.jsx";
 import InfoPopup from "./components/popup/InfoPopup.jsx";
 
+/**
+ * Renders the application, by defining its routes.
+ * @returns {JSX.Element} The application
+ */
 function App() {
 
 	/**
+	 * A pair :
 	 * - id of the connected user, or -1 if not connected
 	 * - username of the connected user, or "" if not connected
 	 */
@@ -26,17 +31,23 @@ function App() {
 		username: ""
 	});
 
+	/** Used for diplaying an error popup globally in the application. */
 	const [error, setError] = useState({
 		showError: false,
 		errorMessage: ""
 	});
+
+	/** Used for diplaying an informational popup globally in the application. */
 	const [info, setInfo] = useState({
 		showInfo: false,
 		infoMessage: ""
 	});
 
 	useEffect(() => {
-		const fetchUser = async () => {
+		/**
+		 * Fetch and potentially update the user connected status.
+		 */
+		const fetchConnected = async () => {
 			try {
 				const response = await axios.get('/api/authentification/me');
 				if (response.data.id != -1 && response.data.user != "") {
@@ -49,9 +60,13 @@ function App() {
 				console.error("Error while fetching current connection state:\n", error);
 			}
 		}
-		fetchUser();
+		fetchConnected();
 	}, []);
 
+	/**
+	 * Diplay an error popup.
+	 * @param {string} errorMessage Error message
+	 */
 	const showError = (errorMessage) => {
 		setError({
 			showError: true,
@@ -59,6 +74,7 @@ function App() {
 		})
 	}
 
+	/** On closing error popup, erase the message. */
 	const onCloseError = () => {
 		setError({
 			showError: false,
@@ -66,6 +82,10 @@ function App() {
 		})
 	}
 
+	/**
+	 * Diplay an informational popup.
+	 * @param {string} infoMessage Informational message
+	 */
 	const showInfo = (infoMessage) => {
 		setInfo({
 			showInfo: true,
@@ -73,6 +93,7 @@ function App() {
 		})
 	}
 
+	/** On closing informational popup, erase the message. */
 	const onCloseInfo = () => {
 		setInfo({
 			showInfo: false,
@@ -82,18 +103,38 @@ function App() {
 
 	return (
 		<BrowserRouter>
+			{/* Navigation top bar */}
 			<NavBar connectedId={connected.id} connectedUsername={connected.username}></NavBar>
+
+			{/* Error / information popups */}
 			{error.showError && (<ErrorPopup message={error.errorMessage} onClose={onCloseError}></ErrorPopup>)}
 			{info.showInfo && (<InfoPopup message={info.infoMessage} onClose={onCloseInfo}></InfoPopup>)}
+
+			{/* Routes */}
 			<Routes>
-				<Route path="/" element={<Home connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Home page */}
-				<Route path="/quizzes" element={<Quizzes connectedId={connected.id} showError={showError} />} /> {/* Page displaying available quizzes */}
-				<Route path="/quiz/:id" element={<QuizPage connectedId={connected.id} showError={showError} showInfo={showInfo} />} /> {/* Page displaying a specific quiz */}
-				<Route path="/leaderboard" element={<LeaderboardPage />} /> {/* Page displaying leaderboard of ISSue users */}
-				<Route path="/login" element={<Login connectedId={connected.id} setConnected={setConnected} showError={showError} />} /> {/* Login page */}
-				<Route path="/signup" element={<Signup connectedId={connected.id} setConnected={setConnected} showError={showError} />} /> {/* Sign up page */}
-				<Route path="/profile/:id" element={<Profile connectedId={connected.id} setConnected={setConnected} showError={showError} showInfo={showInfo} />} /> {/* Profile page */}
-				<Route path="*" element={<NotFound />} /> {/* For non existing paths */}
+				{/* Home page */}
+				<Route path="/" element={<Home connectedId={connected.id} showError={showError} showInfo={showInfo} />} />
+
+				{/* Available quizzes page */}
+				<Route path="/quizzes" element={<Quizzes connectedId={connected.id} showError={showError} />} />
+
+				{/* Specific quiz page */}
+				<Route path="/quiz/:id" element={<QuizPage connectedId={connected.id} showError={showError} showInfo={showInfo} />} />
+
+				{/* ISSue users leaderboard page */}
+				<Route path="/leaderboard" element={<LeaderboardPage />} />
+
+				{/* Login page */}
+				<Route path="/login" element={<Login connectedId={connected.id} setConnected={setConnected} showError={showError} />} />
+
+				{/* Sign up page */}
+				<Route path="/signup" element={<Signup connectedId={connected.id} setConnected={setConnected} showError={showError} />} />
+
+				{/* Profile page */}
+				<Route path="/profile/:id" element={<Profile connectedId={connected.id} setConnected={setConnected} showError={showError} showInfo={showInfo} />} />
+				
+				{/* For non existing paths */}
+				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</BrowserRouter>
 	)

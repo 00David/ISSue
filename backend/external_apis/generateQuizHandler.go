@@ -22,7 +22,7 @@ type ReverseGeocoding struct {
 	Locality             string `json:"locality"`
 }
 
-// Gemini response structure
+// Gemini quiz response structure
 type GeminiQuizResponse struct {
 	Questions   []GeminiQuestion `json:"questions"`
 	Country     string           `json:"country"`
@@ -30,6 +30,8 @@ type GeminiQuizResponse struct {
 	Region      string           `json:"region"`
 	Ocean       bool             `json:"ocean"`
 }
+
+// Gemini quiz question response structure
 type GeminiQuestion struct {
 	Question      string   `json:"question"`
 	Options       []string `json:"options"`
@@ -227,10 +229,10 @@ func GenerateQuizHandler(db *mongo.Database, geminiKey string) http.HandlerFunc 
 			return
 		}
 
-		// Conversion of the questions to our Question entity
-		questions := make([]resources.Question, len(geminiQuiz.Questions))
+		// Conversion of the questions to our QuizQuestion entity
+		questions := make([]resources.QuizQuestion, len(geminiQuiz.Questions))
 		for i, q := range geminiQuiz.Questions {
-			questions[i] = resources.Question{
+			questions[i] = resources.QuizQuestion{
 				NumQuestion:   int32(i),
 				Question:      q.Question,
 				Options:       q.Options,
@@ -246,7 +248,7 @@ func GenerateQuizHandler(db *mongo.Database, geminiKey string) http.HandlerFunc 
 			return
 		}
 
-		// Insertion of the new ISSPosition into our database
+		// Insertion of the new ISSPosition into our database (if new)
 		if newISSPosition {
 			_, err = resources.CreateISSPosition(db, r.Context(), issPosition.Timestamp, issPosition.Latitude, issPosition.Longitude)
 			if err != nil {

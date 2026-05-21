@@ -5,19 +5,34 @@ import axios from "axios";
 import Spinner from "../utility/Spinner.jsx";
 import RecenterMap from "./RecenterMap.jsx"
 
+/**
+ * Renders the ISS position component, used both by the home page ans the quiz page.
+ * @param {boolean} props.canShowCurrentPosition true if the component can show the current ISS position (like on the home page).
+ * @param {Date} props.ISSQuizDate The ISS quiz date (for the ISS quiz position).
+ * @returns {JSX.Element} the ISS position component.
+ */
 function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
-    const [ISSCurrentPosition,setISSCurrentPosition] = useState([0, 0]); // [latitude, longitude]
-    const [ISSQuizPosition,setISSQuizPosition] = useState([0, 0]); // [latitude, longitude]
-    const [currentIsSelected, setCurrentIsSelected] = useState(canShowCurrentPosition ? true : false); // true : current ISS position, false : quiz ISS position
+    /** [latitude, longitude] for the current ISS position */
+    const [ISSCurrentPosition,setISSCurrentPosition] = useState([0, 0]);
+
+    /** [latitude, longitude] for the quiz ISS position */
+    const [ISSQuizPosition,setISSQuizPosition] = useState([0, 0]);
+
+    /** true : current ISS position, false : quiz ISS position */
+    const [currentIsSelected, setCurrentIsSelected] = useState(canShowCurrentPosition ? true : false);
+
     const [loading, setLoading] = useState(true);
     
-    const [recenter, setRecenter] = useState(0); //  map recenter trigger
+    /** map recenter trigger */
+    const [recenter, setRecenter] = useState(0);
 
+    /** Switch to displaying the current ISS position */
     const switchToCurrent = () => {
         setCurrentIsSelected(true);
         setRecenter(recenter+1)
     }
 
+    /** Switch to displaying the quiz ISS position */
     const switchToQuiz = () => {
         setCurrentIsSelected(false);
         setRecenter(recenter+1)
@@ -25,6 +40,10 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
 
     useEffect(() => {
 
+        /**
+         * Fetch ISS positions (potentially the current position + necessarily the quiz position).
+         * @param {boolean} firstLoad This flag indicates indicates when the quiz ISS position must be fetched (only on first load).
+         */
         const fetchISS = async (firstLoad) => {
 
             let fetchError = false;
@@ -60,7 +79,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
         if (canShowCurrentPosition) {
             // ISS position fetched every 5 seconds (if it can be showed)
             const interval = setInterval(() => {
-                fetchISS(false);
+                fetchISS(false); // first load parameter now only at false
             }, 5000)
 
             return () => clearInterval(interval) // interval cleanup
@@ -68,6 +87,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
         
     }, [canShowCurrentPosition, ISSQuizDate]);
 
+    {/* Spinner on loading */}
     if (loading) {
         return (
             <div className="flex flex-col justify-center items-center self-center space-y-4 h-110">
@@ -133,7 +153,7 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
                 </MapContainer>
             </div>
 
-            {/* If current ISS poistion is selected : blinking update info */}
+            {/* If current ISS poistion is selected : bottom blinking update info */}
             <div className="h-6 flex items-center justify-center">
                 {canShowCurrentPosition && currentIsSelected && (
                     <div className="flex items-center gap-2 text-sm text-gray-500">

@@ -7,6 +7,8 @@ import './index.css'
 
 import App from './App.jsx'
 
+// Entry point for rendering the frontend in development
+
 createRoot(document.getElementById('root')).render(
 	<StrictMode>
 		<App />

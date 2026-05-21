@@ -1,3 +1,9 @@
+/**
+ * Renders a spinner with configurable size.
+ *
+ * @param {"sm" | "md" | "lg"} props.size - The size of the spinner.
+ * @returns {JSX.Element} a spinning loader component.
+ */
 function Spinner({ size = "md" }) {
 
     const sizeMap = {

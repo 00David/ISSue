@@ -10,24 +10,117 @@ import RespondedQuiz from './RespondedQuiz.jsx'
 import TodoQuiz from './TodoQuiz.jsx'
 import QuizComments from './QuizComments.jsx'
 
+/**
+ * Renders the main quiz container component.
+ *
+ * Handles:
+ * - Fetching quiz data (today quiz or specific quiz)
+ * - Local cache management (localStorage)
+ * - User responses retrieval
+ * - Pinned quizzes retrieval
+ * - Switching between TodoQuiz and RespondedQuiz views
+ * - Displaying quiz comments section
+ *
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {number} props.idQuiz Quiz ID (-1 means home/today quiz).
+ * @param {(quizDate: Date) => void} [props.setQuizDate] Optional callback to set quiz date externally.
+ * @param {(notFound: boolean) => void} [props.setNotFound] Optional callback to trigger 404 state.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @param {(message: string) => void} props.showInfo Function to display an informational message.
+ *
+ * @returns {JSX.Element} the quiz container component.
+ */
 function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInfo}) {
     const isHome = idQuiz == -1;
     
+    /** The quiz to condider */
     const [quiz, setQuiz] = useState(null);
-    const [quizResponses, setQuizResponses] = useState(null);
+    /** The currently connected user responses to the current quiz. Null if not connected or no responses. */
+    const [userResponses, setUserResponses] = useState(null);
+     /** Ids of user pinned quizzes. Empty if not connected. */
+    const [pinnedQuizzes, setPinnedQuizzes] = useState([]);
 
-    const [pinnedQuizzes, setPinnedQuizzes] = useState([]); // ids of user pinned quizzes, filled only when connected
-
+    /** Selected responses (got from cache) */
     const [selectedCached, setSelectedCached] = useState([]);
+    /** Entered quiz note (got from cache) */
     const [noteCached, setNoteCached] = useState(0);
+    /** Entered quiz comment (got from cache) */
     const [commentCached, setCommentCached] = useState("");
+    /** Having to show the results (got from cache) */
     const [showResultsCached, setShowResultsCached] = useState(false);
+
+    /** Trigerred when a response has been posted, forced a reload */
+    const [forceReload, setForceReload] = useState(false);
+    /** Indicates if the currently connected user has responded to the current quiz */
+    const [hasResponded, setHasResponded] = useState(false);
 
     const [loading, setLoading] = useState(true);
 
-    const [hasResponded, setHasResponded] = useState(false);
-
     useEffect(() => {
+        /**
+         * Fetch all needed data, including the quiz, the eventuel user responses, and the eventual user pinned quizzes.
+         */
+        const fetchAllData = async () => {
+            setLoading(true);
+            
+            try {
+                // First get the quiz
+                const quizData = await getQuiz();
+                if (!quizData) {
+                    setLoading(false);
+                    return;
+                }
+
+                // If not connected, stop here
+                if (connectedId === -1) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Parallel calls for user datas (independant from the quiz)
+                const [responsesData, pinnedData] = await Promise.allSettled([
+                    fetchUserResponses(quizData.idQuiz),
+                    fetchPinnedQuizzes()
+                ]);
+
+                // Treat user responses
+                if (responsesData.status === 'fulfilled' && responsesData.value) {
+                    setUserResponses(responsesData.value);
+                    setHasResponded(true);
+                }
+
+                // Treat pinned quizzes
+                if (pinnedData.status === 'fulfilled' && pinnedData.value) {
+                    setPinnedQuizzes(pinnedData.value);
+                }
+
+            } catch (error) {
+                console.error("Error during data fetching:", error);
+            } finally {
+                setForceReload(false);
+                setLoading(false);
+            }
+        };
+
+        /**
+         * Retrieves the quiz either from cache or from backend API.
+         *
+         * Cache rules:
+         * - Stored in localStorage (quiz-home-cache or quiz{id}-cache)
+         * - Invalid if:
+         *   - Expired (based on expiresAt)
+         *   - Different quiz/date mismatch
+         *
+         * If cache is valid:
+         * - Restores quiz state
+         * - Restores user progress (selected, note, comment, showResults)
+         *
+         * Otherwise:
+         * - Fetches quiz from backend API
+         * - Initializes empty answers array
+         *
+         * @returns {Promise<Object|null>} The quiz object or null if error
+         */
         const getQuiz = async () => {
             // Try to get the quiz from the cache
             const cached = isHome ? localStorage.getItem("quiz-home-cache") : localStorage.getItem("quiz"+idQuiz+"-cache");
@@ -40,20 +133,20 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
                 const cacheExpired = Date.now() > parsed.expiresAt;
                 const isDifferentQuiz = (currentDate != cachedQuizDate) && (idQuiz != parsed.quiz.idQuiz);
 
-                // Remove the cached quiz data if too old, or from a different date
-                if (cacheExpired || isDifferentQuiz) {
-                    localStorage.removeItem("quiz"+parsed.quiz.idQuiz+"-cache");
-                    if (isHome) {
-                        localStorage.removeItem("quiz-home-cache");
-                    }
-                } else {
+                if (!cacheExpired && !isDifferentQuiz) {
                     setQuiz(parsed.quiz);
                     setSelectedCached(parsed.selected);
                     setNoteCached(parsed.note);
                     setCommentCached(parsed.comment);
                     setShowResultsCached(parsed.showResults);
                     if (setQuizDate != null) setQuizDate(parsed.quiz.date);
-                    return;
+                    return parsed.quiz;
+                } else {
+                    // Remove the cached quiz data if too old, or from a different date
+                    localStorage.removeItem("quiz"+parsed.quiz.idQuiz+"-cache");
+                    if (isHome) {
+                        localStorage.removeItem("quiz-home-cache");
+                    }
                 }
             }
 
@@ -66,67 +159,60 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
                 setQuiz(quizFetched.data);
                 setSelectedCached(Array(quizFetched.data.questions.length).fill(-1));
                 if (setQuizDate != null) setQuizDate(quizFetched.data.date);
+                
+                return quizFetched.data;
             } catch (error) {
-                console.error("Error while fetching today quiz:\n", error.response.data);
+                console.error("Error while fetching today quiz:\n", error.response?.data);
                 if (setNotFound != null) setNotFound(true);
+                return null;
             }
         };
-        getQuiz();
-    }, [isHome, idQuiz, setQuizDate, setNotFound]);
 
-    useEffect(() => {
-        const fetchQuizResponses = async () => {
-            if (!quiz){
-                return;
-            }
-
-            if (connectedId == -1){
-                setLoading(false);
-                return;
-            }
-
+        /**
+         * Fetches the connected user's responses for a given quiz.
+         * If the quiz has not been answered yet, returns null (404 ignored).
+         * 
+         * @param {number} quizId The quiz ID
+         * @returns {Promise<Object|null>} User response object or null
+         */
+        const fetchUserResponses = async (quizId) => {
             try {
-                const fetchedQuizResp = await axios.get(
-                    "/api/resources/quiz-responses?" +
-                    "idquiz=" + quiz.idQuiz +
-                    "&iduser=" + connectedId
-                );
-
-                if (fetchedQuizResp.data) {
-                    setQuizResponses(fetchedQuizResp.data);
-                    setHasResponded(true);
-                }
-
+                const fetchedUserResp = await axios.get("/api/resources/user-responses?idquiz="+quizId+"&iduser="+connectedId);
+                return fetchedUserResp.data;
             } catch (error) {
                 // 404 = quiz not yet responded
                 if (error.response?.status != 404) {
-                    console.error("Error while fetching quiz responses:\n", error.response.data);
+                    console.error("Error while fetching user responses:\n", error.response?.data);
                 }
-            } finally {
-                setLoading(false);
+                return null;
             }
         };
-        fetchQuizResponses();
-    }, [quiz, connectedId, loading]);
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            if (connectedId == -1) {
-                return;
-            }
-
+        /**
+         * Fetches the list of pinned quizzes for the connected user.
+         * 
+         * @returns {Promise<number[]>} Array of pinned quiz IDs
+         */
+        const fetchPinnedQuizzes = async () => {
             try {
                 const response = await axios.get("/api/resources/users/"+connectedId);
-                setPinnedQuizzes(response.data.pinnedQuizzes);
+                return response.data.pinnedQuizzes;
             } catch (error) {
                 console.error("Error while fetching connected user pinned quizzes:\n", error.response?.data);
+                return [];
             }
         };
-        fetchUserData();
-    }, [connectedId]);
 
+        fetchAllData();
+    }, [isHome, idQuiz, connectedId, setQuizDate, setNotFound, forceReload]);
+
+    /**
+     * Forces the component to reload all quiz-related data.
+     * Used after submitting a quiz.
+     */
     const onReload = () => {
         setLoading(true);
+        setForceReload(true);
     }
 
     {/* Spinner while loading */}
@@ -153,7 +239,7 @@ function Quiz({connectedId, idQuiz, setQuizDate, setNotFound, showError, showInf
                 <RespondedQuiz 
                     connectedId={connectedId}
                     quiz={quiz} 
-                    quizResponses={quizResponses}
+                    userResponses={userResponses}
                     isHome={isHome}
                     pinnedQuizzes={pinnedQuizzes}
                     setPinnedQuizzes={setPinnedQuizzes}

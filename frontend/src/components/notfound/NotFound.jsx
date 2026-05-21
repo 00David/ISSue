@@ -1,5 +1,9 @@
 import { useEffect } from 'react';
 
+/**
+ * Renders the not found page, for an unkown route.
+ * @returns {JSX.Element} the not found page.
+ */
 function NotFound() {
 
     useEffect(() => {

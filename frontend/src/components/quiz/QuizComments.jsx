@@ -6,14 +6,25 @@ import { MessageSquare, Star, Calendar } from 'lucide-react';
 
 import Spinner from '../utility/Spinner.jsx';
 
+/**
+ * Renders quiz comments fetched from the backend.
+ *
+ * @param {number} props.idQuiz Quiz ID.
+ * @returns {JSX.Element} the quiz comments component.
+ */
 function QuizComments({idQuiz}) {
     const navigate = useNavigate();
 
+    /** An array of the objects representing comments */
     const [comments, setComments] = useState([]);
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const getQuizComments = async () => {
+        /**
+         * Fetches quiz comments.
+         */
+        const fetchQuizComments = async () => {
             try {
                 const response = await axios.get("/api/resources/quizzes/comments/"+idQuiz);
                 setComments(response.data);
@@ -23,10 +34,10 @@ function QuizComments({idQuiz}) {
                 setLoading(false);
             }
         }
-        getQuizComments();
+        fetchQuizComments();
     }, [idQuiz]);
 
-    // Star rating display
+    /** Star rating display */
     const StarRating = ({ note }) => {
         return (
             note > 0 ?
@@ -81,6 +92,7 @@ function QuizComments({idQuiz}) {
                     {/* Left section - Avatar and username */}
                     <div className="cursor-pointer flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-2 sm:min-w-35 
                         border border-transparent rounded-lg p-2 hover:border-red-500 transition-all duration-300"
+                        title="Go to profile"
                         onClick={() => navigate("/profile/"+comment.idUser)}
                     >
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 

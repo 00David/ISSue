@@ -1,6 +1,12 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 
+/**
+ * Renders an error popup.
+ * @param {number} props.message The message to display into the popup.
+ * @param {() => void} props.onClose Function for closing the popup.
+ * @returns {JSX.Element} The error popup.
+ */
 export const ErrorPopup = ({ message, onClose }) => {
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-1003">

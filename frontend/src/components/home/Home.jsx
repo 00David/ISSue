@@ -4,6 +4,13 @@ import ISSPosition from '../iss/ISSPosition.jsx'
 import Quiz from '../quiz/Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
+/**
+ * Renders the home page.
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @param {(message: string) => void} props.showInfo Function to display an informational message.
+ * @returns {JSX.Element} the home page.
+ */
 function Home({connectedId, showError, showInfo}) {
 
     useEffect(() => {

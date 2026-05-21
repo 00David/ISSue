@@ -2,14 +2,22 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+/**
+ * Renders the sign up page, allowing to enter its username, email and password.
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {(connectedId: number) => void} props.setConnected Function to set a new connected id.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @returns {JSX.Element} the sign up page.
+ */
 function Signup({connectedId, setConnected, showError}) {
-
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-
     const navigate = useNavigate();
+
+    /** Current entered username */
+    const [username, setUsername] = useState("");
+    /** Current entered email */
+    const [email, setEmail] = useState("");
+    /** Current entered password */
+    const [password, setPassword] = useState("");
 
     useEffect(() => {
         document.title = "ISSue - Sign up";
@@ -20,18 +28,17 @@ function Signup({connectedId, setConnected, showError}) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
 
         try {
             // Signup
-            await axios.post('/api/authentification/signup', {
+            await axios.post("/api/authentification/signup", {
                 username,
                 email,
                 password
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get('/api/authentification/me');
+            const res = await axios.get("/api/authentification/me");
             setConnected({ // triggers a redirection to the user profile page (via local useEffect)
                 id: res.data.id,
                 username: username
@@ -101,10 +108,7 @@ function Signup({connectedId, setConnected, showError}) {
                     Sign up
                 </button>
 
-                {error && (
-                    <p className="text-red-500 text-sm text-center">{error}</p>
-                )}
-
+                {/* Link to login */}
                 <p className="text-sm text-center mt-2">
                     Already have an account?{" "}
                     <Link className="text-peacefullissue no-underline transition-colors duration-300 ease-in-out hover:text-[#6a9bc7] hover:underline" 

@@ -87,13 +87,13 @@ func CreateUser(db *mongo.Database, ctx context.Context,
 		return -1, err
 	}
 	user := User{
-		IdUser:           id,
-		Username:         username,
-		Email:            email,
-		Password:         password,
-		SubscribeDate:    subscribeDate,
-		RespondedQuizzes: make([]int32, 0),
-		PinnedQuizzes:    make([]int32, 0),
+		IdUser:        id,
+		Username:      username,
+		Email:         email,
+		Password:      password,
+		SubscribeDate: subscribeDate,
+		UserResponses: make([]int32, 0),
+		PinnedQuizzes: make([]int32, 0),
 	}
 	_, err = collection.InsertOne(ctx, user)
 	return id, err
@@ -135,28 +135,28 @@ func UpdateUserInfo(db *mongo.Database, ctx context.Context,
 	return err
 }
 
-// Updates a User responded quizzes indexes
-func UpdateUserRespondedQuizzes(db *mongo.Database, ctx context.Context,
-	id int32, newRespondedQuizzes []int32) error {
+// Updates a User response indexes
+func UpdateUserResponses(db *mongo.Database, ctx context.Context,
+	id int32, newUserResponses []int32) error {
 	collection := db.Collection(collectionNameUsers)
 
 	filter := bson.D{{Key: "idUser", Value: id}}
 	update := bson.D{{Key: "$set",
-		Value: bson.D{{Key: "respondedQuizzes", Value: newRespondedQuizzes}},
+		Value: bson.D{{Key: "userResponses", Value: newUserResponses}},
 	}}
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
 }
 
-// Updates a User responded quizzes indexes by adding a given new response index
-func AddUserRespondedQuiz(db *mongo.Database, ctx context.Context,
-	id int32, newRespondedQuizId int32) error {
+// Updates a User response indexes by adding a given new response index
+func AddUserResponse(db *mongo.Database, ctx context.Context,
+	id int32, newUserResponseId int32) error {
 	collection := db.Collection(collectionNameUsers)
 
 	filter := bson.D{{Key: "idUser", Value: id}}
 	update := bson.D{
 		{Key: "$push", Value: bson.D{
-			{Key: "respondedQuizzes", Value: newRespondedQuizId},
+			{Key: "userResponses", Value: newUserResponseId},
 		}},
 	}
 
@@ -224,7 +224,7 @@ func DeleteUser(db *mongo.Database, ctx context.Context, id int32) error {
 }
 
 // ============================================================
-// ======================== HANDLER ===========================
+// ======================== HANDLERS ==========================
 // ============================================================
 
 // "/api/resources/users[/id]" handler
@@ -235,10 +235,8 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		idStr := utility.GetSuffixParams("/api/resources/users/", r)
 
 		if idStr == "" {
-			fmt.Println("Request received on '/api/resources/users'")
 			userHandlerWithoutId(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/resources/users/id'")
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
 			if err != nil {
@@ -253,6 +251,7 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 
 // "/api/resources/users" handler
 func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Request received on '/api/resources/users'")
 
 	// Only POST
 	if r.Method != http.MethodPost {
@@ -286,6 +285,7 @@ func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Req
 
 // "/api/resources/users/id" handler
 func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, jwtSecret []byte, id int32) {
+	fmt.Println("Request received on '/api/resources/users/id'")
 
 	// If the user token indicates that he is the concerned user : he can do any action on its data
 	allRights := utility.IsUserAuthorized(r, jwtSecret, id)
@@ -332,21 +332,21 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		}
 
 		// Search for responses to quizzes : delete those responses and references to them
-		for _, idResponses := range user.RespondedQuizzes {
+		for _, idUserResponses := range user.UserResponses {
 
-			// First get the QuizResponses
-			responses, err := GetQuizResponses(db, r.Context(), idResponses)
+			// First get the UserResponses
+			responses, err := GetUserResponses(db, r.Context(), idUserResponses)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+					http.Error(w, "No User responses for this id", http.StatusNotFound)
 					return
 				}
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			// Then delete this QuizResponses id from the Quiz it has responded
-			err = DeleteQuizRespondedQuiz(db, r.Context(), responses.IdQuiz, idResponses)
+			// Then delete this UserResponses id from the Quiz it has responded
+			err = DeleteQuizUserResponse(db, r.Context(), responses.IdQuiz, idUserResponses)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					http.Error(w, "No Quiz for this id", http.StatusNotFound)
@@ -356,8 +356,8 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				return
 			}
 
-			// Finally, delete the QuizResponses
-			err = DeleteQuizResponses(db, r.Context(), idResponses)
+			// Finally, delete the UserResponses
+			err = DeleteUserResponses(db, r.Context(), idUserResponses)
 			if err != nil {
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 				return
@@ -458,18 +458,6 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 				return
 			}
 		}
-		// Update of the User responded quizzes indexes, if needed
-		if len(req.RespondedQuizzes) > 0 {
-			err := UpdateUserRespondedQuizzes(db, r.Context(), id, req.RespondedQuizzes)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No User for this id", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
@@ -480,10 +468,6 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
 		return
 	}
-}
-
-type Pin struct {
-	IdQuiz int32 `json:"idQuiz"`
 }
 
 // "/api/resources/users/pin" handler
@@ -542,10 +526,6 @@ func UsersPinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc 
 	}
 }
 
-type Unpin struct {
-	IdQuiz int32 `json:"idQuiz"`
-}
-
 // "/api/resources/users/unpin" handler
 func UsersUnpinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -596,6 +576,66 @@ func UsersUnpinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFun
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " succesfully unpinned",
 		})
+	}
+}
+
+// "/api/resources/users/responded/id" handler, with id being the user id
+func UsersRespondedQuizzesHandler(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Request received on '/api/resources/users/responded/id'")
+
+		// Only GET
+		if r.Method != http.MethodGet {
+			http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// gets the potential id parameter
+		idStr := utility.GetSuffixParams("/api/resources/users/responded/", r)
+
+		if idStr == "" {
+			http.Error(w, "Invalid request format, must provide an id", http.StatusBadRequest)
+			return
+		}
+
+		// Checks that the parameter is an integer
+		id64, err := strconv.ParseInt(idStr, 10, 32)
+		if err != nil {
+			http.Error(w, "Invalid id parameter format, must be an integer", http.StatusBadRequest)
+			return
+		}
+		idUser := int32(id64)
+
+		// Get the user in DB
+		user, err := GetUser(db, r.Context(), idUser)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No User for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		respondedQuizzes := make([]int32, 0)
+		// For every response, get the quiz id for which it has responded
+		for _, idUserResponse := range user.UserResponses {
+
+			response, err := GetUserResponses(db, r.Context(), idUserResponse)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			respondedQuizzes = append(respondedQuizzes, response.IdQuiz)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(respondedQuizzes)
 	}
 }
 

@@ -1,6 +1,12 @@
 import React from 'react';
 import { Info } from 'lucide-react';
 
+/**
+ * Renders an information popup.
+ * @param {number} props.message The message to display into the popup.
+ * @param {() => void} props.onClose Function for closing the popup.
+ * @returns {JSX.Element} The information popup.
+ */
 export const InfoPopup = ({ message, onClose }) => {
 	return (
 		<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-1003">

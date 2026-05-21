@@ -5,17 +5,44 @@ import Spinner from "../utility/Spinner.jsx";
 import QuizzesList from "./QuizzesList.jsx";
 import QuizzesMap from "./QuizzesMap.jsx";
 
+/**
+ * Renders the page displaying available quizzes.
+ *
+ * Responsibilities:
+ * - Fetch quizzes list (with caching via localStorage)
+ * - Fetch user-specific data (responded quizzes + pinned quizzes)
+ * - Handle loading state
+ * - Provide UI toggle between list view and map view
+ * - Pass data to child components (QuizzesList / QuizzesMap)
+ *
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @returns {JSX.Element} the page with a list/map toggle.
+ */
 function Quizzes({connectedId, showError}) {
 
+    /** Array of all ISSue quizzes in database */
     const [quizzes, setQuizzes] = useState([]);
-    const [respondedQuizzes, setRespondedQuizzes] = useState([]); // ids of user responded quizzes, filled only when connected
-    const [pinnedQuizzes, setPinnedQuizzes] = useState([]); // ids of user pinned quizzes, filled only when connected
-    const [selectedView, setSelectedView] = useState("list"); // "list" or "map"
+    /** Ids of user responded quizzes, filled only when connected */
+    const [respondedQuizzes, setRespondedQuizzes] = useState([]);
+    /** Ids of user pinned quizzes, filled only when connected */
+    const [pinnedQuizzes, setPinnedQuizzes] = useState([]);
+    /** "list" or "map" */
+    const [selectedView, setSelectedView] = useState("list");
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         document.title = "ISSue - Quizzes";
 
+        /**
+         * Fetches quizzes list with caching mechanism.
+         *
+         * Cache behavior:
+         * - Stored in localStorage under "quizzes"
+         * - Expires after 10 minutes
+         * - Invalidated if date changes
+         */
         const fetchQuizzes = async () => {
 
             let gotQuizFromCache = false;
@@ -57,29 +84,44 @@ function Quizzes({connectedId, showError}) {
                 }
             }
 
-            if (connectedId == -1) { // Not connected : don't fetch user id and stop here
-                setLoading(false);
-            }
         };
         fetchQuizzes();
+        // Not connected : stop loading, don't fetch the rest
+        if (connectedId == -1) {
+            setLoading(false);
+            return;
+        }
 
-        const fetchUserData = async () => {
+        /**
+         * Fetch quizzes already responded by the user.
+         */
+        const fetchRespondedQuizzes = async () => {
+            try {
+                const response = await axios.get("/api/resources/users/responded/"+connectedId);
+                setRespondedQuizzes(response.data);
+            } catch (error) {
+                console.error("Error while fetching connected user responded quizzes:\n", error.response?.data);
+            }
+        };
+        fetchRespondedQuizzes();
+
+        /**
+         * Fetch user pinned quizzes.
+         */
+        const fetchPinnedQuizzes = async () => {
             try {
                 const response = await axios.get("/api/resources/users/"+connectedId);
-                setRespondedQuizzes(response.data.respondedQuizzes);
                 setPinnedQuizzes(response.data.pinnedQuizzes);
             } catch (error) {
-                console.error("Error while fetching connected user quizzes infos:\n", error.response?.data);
+                console.error("Error while fetching connected user pinned quizzes:\n", error.response?.data);
             } finally {
                 setLoading(false);
             }
         };
-        if (connectedId != -1) { // If the user is connected : its responded quizzes ids are fetched
-            fetchUserData();
-        }
+        fetchPinnedQuizzes();
     }, [connectedId]);
 
-    // Spinner while loading
+    {/* Spinner while loading */}
     if (loading) {
         return (
             <div className="flex flex-col gap-4 justify-center items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto mt-10">

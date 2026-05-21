@@ -84,7 +84,7 @@ func DeleteISSPosition(db *mongo.Database, ctx context.Context, date time.Time) 
 // ======================== HANDLER ===========================
 // ============================================================
 
-// "/api/resources/iss/dd-mm-yyyy" handler
+// "/api/resources/iss/date" handler
 func ISSHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

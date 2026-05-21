@@ -1,4 +1,4 @@
-package main
+package utility
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 // Connects the backend to the MongoDB Atlas database
-func connect_db(password string, local_db bool) (*mongo.Client, *mongo.Database) {
+func ConnectDatabase(password string, local_db bool) (*mongo.Client, *mongo.Database) {
 
 	var opts *options.ClientOptions
 	if local_db {

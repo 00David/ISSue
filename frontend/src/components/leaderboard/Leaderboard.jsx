@@ -4,13 +4,22 @@ import { Trophy, Medal } from "lucide-react";
 import axios from "axios";
 import Spinner from "../utility/Spinner.jsx";
 
+/**
+ * Renders the ISSue leaderboard.
+ * @returns {JSX.Element} the leaderboard component.
+ */
 function Leaderboard() {
     const navigate = useNavigate();
 
+    /** Array of leaderboard users infos */
     const [users, setUsers] = useState([]);
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        /**
+         * Fetch the array of leaderboard users infos.
+         */
         const fetchLeaderboard = async () => {
             try {
                 const response = await axios.get("/api/resources/users/leaderboard");
@@ -24,12 +33,19 @@ function Leaderboard() {
         fetchLeaderboard();
     }, []);
 
-    // Navigation to a user profile page
+    /**
+     * Navigates to a user profile page.
+     * @param {number} idUser The profile to which we want to navigate.
+     */
     const goToUser = (idUser) => {
         navigate("/profile/"+idUser);
     };
 
-    // Get medal component based on rank
+    /**
+     * Get Medal or Trophy component based on rank.
+     * @param {number} rank The rank of a user.
+     * @returns A Trophy component for the 1st place, a Medal for 2nd/3rd places, otherwise null.
+     */
     const getMedalIcon = (rank) => {
         switch(rank) {
             case 1:
@@ -43,7 +59,11 @@ function Leaderboard() {
         }
     };
 
-    // Get podium height class
+    /**
+     * Get podium height class based on rank.
+     * @param {number} rank The rank of a user.
+     * @returns A height adapted to the given user's rank. Higher ranks have higher height.
+     */
     const getPodiumHeight = (rank) => {
         switch(rank) {
             case 1:
@@ -57,7 +77,7 @@ function Leaderboard() {
         }
     };
 
-    // Spinner while loading
+    {/* Spinner on loading */}
     if (loading) {
         return (
             <div className="flex flex-col gap-4 justify-center items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto mt-10">
@@ -99,6 +119,7 @@ function Leaderboard() {
                         {/* 2nd Place */}
                         {top3[1] && (
                             <div 
+                                title="Go to profile"
                                 onClick={() => goToUser(top3[1].idUser)}
                                 className="flex flex-col items-center cursor-pointer group flex-1 max-w-xs"
                             >
@@ -128,6 +149,7 @@ function Leaderboard() {
                         {/* 1st Place */}
                         {top3[0] && (
                             <div 
+                                title="Go to the BEST profile"
                                 onClick={() => goToUser(top3[0].idUser)}
                                 className="flex flex-col items-center cursor-pointer group flex-1 max-w-xs"
                             >
@@ -158,6 +180,7 @@ function Leaderboard() {
                         {/* 3rd Place */}
                         {top3[2] && (
                             <div 
+                                title="Go to profile"
                                 onClick={() => goToUser(top3[2].idUser)}
                                 className="flex flex-col items-center cursor-pointer group flex-1 max-w-xs"
                             >
@@ -200,6 +223,7 @@ function Leaderboard() {
                             return (
                                 <div
                                     key={user.idUser}
+                                    title="Go to profile"
                                     onClick={() => goToUser(user.idUser)}
                                     className="flex items-center justify-between px-6 py-4 bg-[#16182e]
                                              rounded-lg hover:bg-[#1a1d3a] transition-all duration-200 

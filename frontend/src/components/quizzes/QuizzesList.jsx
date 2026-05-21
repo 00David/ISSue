@@ -5,14 +5,46 @@ import ReactCountryFlag from "react-country-flag";
 import { Star, ChevronUp, ChevronDown, Pin, PinOff } from 'lucide-react';
 import axios from 'axios';
 
+/**
+ * Renders a searchable, sortable table of quizzes.
+ *
+ * Handles :
+ * - Search by country / region / date
+ * - Sort by multiple columns (date, country, region, responses, score, note)
+ * - Pin / unpin quizzes (optimistic UI updates)
+ * - Navigation to quiz page or results page
+ * - Visual indicators for responded quizzes
+ *
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {Array<Object>} props.quizzes List of all quizzes available.
+ * @param {Array<number>} props.respondedQuizzes IDs of quizzes already responded by the user.
+ * @param {Array<number>} props.pinnedQuizzes IDs of quizzes pinned by the user.
+ * @param {(newPinned: number[]) => void} props.setPinnedQuizzes Updates the pinned quizzes list in parent state.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @returns {JSX.Element} a quizzes list with sorting and filtering.
+ */
 function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, setPinnedQuizzes, showError}) {
     const navigate = useNavigate();
 
+    /** Entered textual search */
     const [searchText, setSearchText] = useState("");
+    /** Entered date search */
     const [searchDate, setSearchDate] = useState("");
+    /** Column currently sorted, by default "date" column */
     const [sortColumn, setSortColumn] = useState("date"); // Column currently sorted, by default desc date
+    /** Sort direction, "asc" or "desc", by default "desc" (on "date" column) */
     const [sortDirection, setSortDirection] = useState("desc"); // "asc" or "desc"
 
+    /**
+     * Pins a quiz optimistically (UI update first, API call after).
+     *
+     * Behavior:
+     * - Adds quiz ID locally immediately
+     * - Sends POST request to backend
+     * - Rolls back state if request fails
+     *
+     * @param {number} idQuiz ID of the quiz to pin
+     */
     const handlePin = async (idQuiz) => {
         // Immediately add locally the newly pinned quiz id
         setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
@@ -28,6 +60,16 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         }
     };
 
+    /**
+     * Unpins a quiz optimistically (UI update first, API call after).
+     *
+     * Behavior:
+     * - Removes quiz ID locally immediately
+     * - Sends POST request to backend
+     * - Rolls back state if request fails
+     * 
+     * @param {number} idQuiz ID of the quiz to unpin
+     */
     const handleUnpin = async (idQuiz) => {
         // Immediately delete locally the unpined quiz id
         setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
@@ -43,19 +85,29 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         }
     };
 
-    // Filtering function
+    /**
+     * Filters quizzes by search text and date.
+     * @returns {Array<Object>} Filtered quizzes list
+     */
     const filteredQuizzes = quizzes.filter(quiz => {
-        const matchesText = searchText === "" || 
+        const matchesText = searchText == "" || 
             quiz.country.toLowerCase().includes(searchText.toLowerCase()) ||
             quiz.region.toLowerCase().includes(searchText.toLowerCase());
         
-        const matchesDate = searchDate === "" || 
-            new Date(quiz.date).toISOString().split("T")[0] === searchDate;
+        const matchesDate = searchDate == "" || 
+            new Date(quiz.date).toISOString().split("T")[0] == searchDate;
         
         return matchesText && matchesDate;
     });
 
-    // Sorting function
+    /**
+     * Changes sorting configuration.
+     *
+     * If the same column is clicked twice -> toggles asc/desc.
+     * Otherwise resets to ascending order.
+     *
+     * @param {string} column Column key to sort by
+     */
     const handleSort = (column) => {
         if (sortColumn === column) {
             // If we click on the same column, the sort direction is reversed
@@ -67,12 +119,30 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         }
     };
 
-    // Navigation to a quiz
+    /**
+     * Navigates to quiz page.
+     * @param {number} idQuiz Quiz ID
+     */
     const goToQuiz = (idQuiz) => {
         navigate("/quiz/"+idQuiz);
     };
 
-    // Apply sorting
+    /**
+     * Sorts filtered quizzes based on selected column and direction.
+     *
+     * Sorting rules:
+     * - date: newest/oldest based on timestamp
+     * - country: alphabetical (case-insensitive)
+     * - region: alphabetical (case-insensitive)
+     * - responses: number of user responses
+     * - score: average score (-1 treated as -Infinity)
+     * - note: average user note (-1 treated as -Infinity)
+     *
+     * Behavior:
+     * - Clones filteredQuizzes to avoid mutating state
+     * - Dynamically selects comparison key based on sortColumn
+     * - Applies ascending or descending order via sortDirection
+     */
     const sortedQuizzes = [...filteredQuizzes].sort((a, b) => {
         if (!sortColumn) return 0;
 
@@ -91,8 +161,8 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
                 bValue = b.region.toLowerCase();
                 break;
             case "responses":
-                aValue = a.respondedQuizzes.length;
-                bValue = b.respondedQuizzes.length;
+                aValue = a.userResponses.length;
+                bValue = b.userResponses.length;
                 break;
             case "score":
                 aValue = a.avgScore === -1 ? -Infinity : a.avgScore;
@@ -111,10 +181,20 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
         return 0;
     });
 
+    /**
+     * Checks if a quiz is pinned by the user currently connected.
+     * @param {number} idQuiz Quiz ID
+     * @returns {boolean}
+     */
     const isPinned = (idQuiz) => {
         return pinnedQuizzes?.includes(idQuiz);
     };
 
+    /**
+     * Checks if a quiz has been responded by the user currently connected.
+     * @param {number} idQuiz Quiz ID
+     * @returns {boolean}
+     */
     const isResponded = (idQuiz) => {
         return respondedQuizzes?.includes(idQuiz);
     };
@@ -321,7 +401,7 @@ function QuizzesList({connectedId, quizzes, respondedQuizzes, pinnedQuizzes, set
 
                             {/* N° of responses */}
                             <div className="flex items-center text-gray-300">
-                                {quiz.respondedQuizzes.length}
+                                {quiz.userResponses.length}
                             </div>
 
                             {/* Average score */}

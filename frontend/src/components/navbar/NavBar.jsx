@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { LogIn } from "lucide-react";
 
+/**
+ * Renders the application top navigation bar, allowing to move to the home, the quizzes, the leaderboard or the login/profile.
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {string} props.connectedUsername "" if not connected, or the connected username.
+ * @returns {JSX.Element} top navigation bar.
+ */
 function NavBar({connectedId, connectedUsername}) {
     const navigate = useNavigate();
 

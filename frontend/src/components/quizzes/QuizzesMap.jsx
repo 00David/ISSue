@@ -7,7 +7,7 @@ import L from "leaflet";
 
 import Spinner from "../utility/Spinner.jsx";
 
-// Custom icon for markers
+/** Custom icon for markers */
 const customIcon = new L.Icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
     shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
@@ -17,13 +17,37 @@ const customIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
+/**
+ * Renders quizzes on an interactive world map using Leaflet.
+ *
+ * Features:
+ * - Fetches ISS positions for each quiz date
+ * - Caches map positions in localStorage (10 min TTL)
+ * - Displays clustered markers on a world map
+ * - Each marker opens a popup with quiz info
+ * - Navigation to quiz detail page
+ *
+ * @param {Array<Object>} props.quizzes List of quizzes to display on the map.
+ * @returns {JSX.Element} an interactive map with quiz markers.
+ */
 function QuizzesMap({quizzes}) {
-
-    const [quizPositionsMap, setQuizPositionsMap] = useState(new Map()); // Map: date -> {latitude, longitude, quiz infos}
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    /** Quiz positions map (structure) : date -> {latitude, longitude, quiz infos} */
+    const [quizPositionsMap, setQuizPositionsMap] = useState(new Map()); // 
+
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
+        /**
+         * Fetches ISS positions for all quizzes and caches the result.
+         *
+         * - Uses localStorage cache
+         * - If cache valid -> loads directly
+         * - Otherwise fetches "/api/resources/iss/:date" per quiz
+         * - Builds the "quizPositionsMap"
+         * - Cache the builded map (as an array because a map is not serializable)
+         */
         const fetchQuizzesPositions = async () => {
             const positionsMap = new Map();
 
@@ -87,12 +111,15 @@ function QuizzesMap({quizzes}) {
         }
     }, [quizzes]);
 
-    // Fonction de navigation vers un quiz
+    /**
+     * Navigates to quiz page.
+     * @param {number} idQuiz Quiz ID
+     */
     const goToQuiz = (idQuiz) => {
-        navigate(`/quiz/${idQuiz}`);
+        navigate("/quiz/"+idQuiz);
     };
 
-    // Spinner while loading
+    {/* Spinner while loading */}
     if (loading) {
         return (
             <div className="flex flex-col gap-4 justify-center items-center self-center w-[70%] rounded-xl p-5 bg-midissue mx-auto">
@@ -106,7 +133,7 @@ function QuizzesMap({quizzes}) {
         <div className="w-full max-w-7xl mb-12">
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
 
-                {/* The MAP */}
+                {/* The MAGNIFIQUE MAP */}
                 <MapContainer 
                     className="w-full h-150" 
                     center={[20, 0]}

@@ -2,10 +2,36 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, X } from 'lucide-react';
 
+/**
+ * Renders the completed quiz popup after the user validates a quiz.
+ *
+ * Displays:
+ * - The user score
+ * - A random feedback message based on performance
+ * - A star rating input
+ * - A comment textarea
+ * - A submission button to post the quiz results
+ *
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {() => void} props.postResponse Function to submit quiz results to the backend.
+ * @param {boolean} props.showPopup Whether the popup is visible.
+ * @param {(value: boolean) => void} props.setShowPopup Function to toggle popup visibility.
+ * @param {number} props.score Final quiz score (out of 10).
+ * @param {number} props.note User current rating (0 to 5 stars).
+ * @param {(value: number) => void} props.setNote Function to update star rating.
+ * @param {string} props.comment User current text comment.
+ * @param {(value: string) => void} props.setComment Function to update comment.
+ * @param {(message: string) => void} props.showInfo Function to display an informational message.
+ *
+ * @returns {JSX.Element|null} The completed quiz popup or null if hidden.
+ */
 function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup, 
     score, note, setNote, comment, setComment, showInfo}) {
     const navigate = useNavigate();
 
+    /**
+     * Returns a random comment based on performance.
+     */
     const randomComment = useMemo(() => {
         const boss = ["Perfect score.", "You crushed it.", "Absolutely flawless.", "Top-tier performance.", "Mastered completely."];
         const almostGotIt = ["So close to perfect.", "Great job overall.", "Almost flawless.", "Very strong result.", "You nearly nailed it."];
@@ -23,6 +49,10 @@ function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup,
         return randomSentence(how);
     }, [score]);
 
+    /**
+     * Unselect the current note if already selected, or select it if not already selected.
+     * @param {number} numStar The number of the star (<=> the note given).
+     */
     const setStarNote = (numStar) => {
         if (numStar == note) {
             setNote(0);
@@ -31,9 +61,13 @@ function CompletedQuizPopup({connectedId, postResponse, showPopup, setShowPopup,
         }
     }
 
+    /**
+     * Verifies that the user is currently connected : if so, calls the postResponse() given function, 
+     * or redirects to the login page if not connected.
+     */
     const postResponseHandler = () => {
         if (connectedId == -1) {
-            navigate("/login"); // if not connected, redirect to login
+            navigate("/login");
             showInfo("Need to have an account !");
         } else {
             postResponse();

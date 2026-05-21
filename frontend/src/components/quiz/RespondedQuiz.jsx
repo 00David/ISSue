@@ -6,8 +6,34 @@ import axios from 'axios';
 import Spinner from '../utility/Spinner.jsx';
 import Question from './Question.jsx'
 
-function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes, setPinnedQuizzes, showError}) {
+/**
+ * Renders the quiz sub-component when the user has ALREADY responded.
+ * 
+ * Shows the quiz content with correct answers, user score, note, and comment.
+ * Also allows pinning/unpinning the quiz.
+ *
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {Object} props.quiz Quiz object containing questions, metadata, and answers.
+ * @param {Object} props.userResponses User responses for the quiz.
+ * @param {boolean} props.isHome Whether the quiz is the daily/home quiz.
+ * @param {number[]} props.pinnedQuizzes List of pinned quiz IDs.
+ * @param {(newPinned: number[]) => void} props.setPinnedQuizzes Updates pinned quizzes list.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * 
+ * @returns {JSX.Element} Rendered completed quiz interface.
+ */
+function RespondedQuiz({connectedId, quiz, userResponses, isHome, pinnedQuizzes, setPinnedQuizzes, showError}) {
 
+    /**
+     * Pins a quiz optimistically (UI update first, API call after).
+     *
+     * Behavior:
+     * - Adds quiz ID locally immediately
+     * - Sends POST request to backend
+     * - Rolls back state if request fails
+     *
+     * @param {number} idQuiz ID of the quiz to pin
+     */
     const handlePin = async (idQuiz) => {
         // Immediately add locally the newly pinned quiz id
         setPinnedQuizzes([...pinnedQuizzes, idQuiz]);
@@ -23,6 +49,16 @@ function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes,
         }
     };
 
+    /**
+     * Unpins a quiz optimistically (UI update first, API call after).
+     *
+     * Behavior:
+     * - Removes quiz ID locally immediately
+     * - Sends POST request to backend
+     * - Rolls back state if request fails
+     * 
+     * @param {number} idQuiz ID of the quiz to unpin
+     */
     const handleUnpin = async (idQuiz) => {
         // Immediately delete locally the unpined quiz id
         setPinnedQuizzes(pinnedQuizzes.filter(id => id != idQuiz));
@@ -38,14 +74,26 @@ function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes,
         }
     };
 
+    /**
+     * Indicates if a given quiz is pinned (here it can only be for the current one).
+     * @param {nomber} idQuiz the quiz id for which we want to know if he is pinned. 
+     * @returns {boolean} True if the given quiz is pinned.
+     */
     const isPinned = (idQuiz) => {
         return pinnedQuizzes?.includes(idQuiz);
     };
 
-    const selected = quizResponses.responses.map(
+    /**
+     * Extracted selected answers from user responses.
+     */
+    const selected = userResponses.questionsResponses.map(
         (response) => response.numResponse
     );
 
+    /**
+     * Final computed score based on correct answers.
+     * @return {number} final computed score based on correct answers
+     */
     const finalScore = selected.reduce((acc, answerIndex, i) => {
         if (answerIndex == -1) return acc;
         const correctIndex = quiz.questions[i].indexResponse;
@@ -130,12 +178,12 @@ function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes,
             <div className="flex flex-col items-center gap-2 mb-4">
                 <h2>Given note :</h2>
                 <div className="flex gap-1">
-                {quizResponses.note > 0
+                {userResponses.note > 0
                     ? Array.from({ length: 5 }, (_, i) => (
                         <Star
                         key={i}
-                        fill={i < quizResponses.note ? "gold" : "none"}
-                        color={i < quizResponses.note ? "gold" : "currentColor"}
+                        fill={i < userResponses.note ? "gold" : "none"}
+                        color={i < userResponses.note ? "gold" : "currentColor"}
                         />
                     ))
                     : "No note left."
@@ -148,8 +196,8 @@ function RespondedQuiz({connectedId, quiz, quizResponses, isHome, pinnedQuizzes,
                 <h2>Comment :</h2>
                 <div className="w-full bg-darkissue rounded-lg p-3 text-gray-200 wrap-break-words text-center">
                     {
-                        quizResponses.comment?.trim()
-                        ? quizResponses.comment
+                        userResponses.comment?.trim()
+                        ? userResponses.comment
                         : "No comment left."
                     }
                 </div>

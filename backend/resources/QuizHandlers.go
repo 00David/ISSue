@@ -63,6 +63,29 @@ func GetQuizWithStats(db *mongo.Database, ctx context.Context, id int32) (QuizWi
 	return toQuizWithStats(db, ctx, quiz)
 }
 
+// Returns a Quiz in DB for a given date, with stats on its responses
+func GetQuizWithDateWithStats(db *mongo.Database, ctx context.Context, date time.Time) (QuizWithStats, error) {
+	collection := db.Collection(collectionNameQuiz)
+
+	// time interval containing 'date' exact day
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	filter := bson.M{
+		"date": bson.M{
+			"$gte": start,
+			"$lt":  end,
+		},
+	}
+
+	var quiz Quiz
+	err := collection.FindOne(ctx, filter).Decode(&quiz)
+	if err != nil {
+		return QuizWithStats{}, err
+	}
+
+	return toQuizWithStats(db, ctx, quiz)
+}
+
 // Returns all quizzes in DB
 func GetAllQuizzes(db *mongo.Database, ctx context.Context) ([]Quiz, error) {
 	collection := db.Collection(collectionNameQuiz)
@@ -127,7 +150,7 @@ func GetAllQuizzesWithStats(db *mongo.Database, ctx context.Context) ([]QuizWith
 
 // Creates a Quiz in DB, returns its new id
 func CreateQuiz(db *mongo.Database, ctx context.Context,
-	date time.Time, questions []Question, country string, countryCode string, region string, ocean bool) (int32, error) {
+	date time.Time, questions []QuizQuestion, country string, countryCode string, region string, ocean bool) (int32, error) {
 	collection := db.Collection(collectionNameQuiz)
 
 	// We don't create a new Quiz when there is already one existing for the same date
@@ -142,42 +165,42 @@ func CreateQuiz(db *mongo.Database, ctx context.Context,
 	}
 
 	quiz := Quiz{
-		IdQuiz:           id,
-		Date:             date,
-		Questions:        questions,
-		Country:          country,
-		CountryCode:      countryCode,
-		Region:           region,
-		Ocean:            ocean,
-		RespondedQuizzes: []int32{},
+		IdQuiz:        id,
+		Date:          date,
+		Questions:     questions,
+		Country:       country,
+		CountryCode:   countryCode,
+		Region:        region,
+		Ocean:         ocean,
+		UserResponses: []int32{},
 	}
 	_, err = collection.InsertOne(ctx, quiz)
 	return id, err
 }
 
-// Updates a Quiz responded quizzes indexes
-func UpdateQuizRespondedQuizzes(db *mongo.Database, ctx context.Context,
-	id int32, newRespondedQuizzes []int32) error {
+// Updates a Quiz user responses indexes
+func UpdateQuizUserResponses(db *mongo.Database, ctx context.Context,
+	id int32, newUserResponses []int32) error {
 	collection := db.Collection(collectionNameQuiz)
 
 	filter := bson.D{{Key: "idQuiz", Value: id}}
 	update := bson.D{{Key: "$set",
-		Value: bson.D{{Key: "respondedQuizzes", Value: newRespondedQuizzes}},
+		Value: bson.D{{Key: "userResponses", Value: newUserResponses}},
 	}}
 	_, err := collection.UpdateOne(ctx, filter, update)
 	return err
 }
 
-// Updates a Quiz responded quizzes indexes by adding a given new response index
-func AddQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
-	id int32, newRespondedQuizId int32) error {
+// Updates a Quiz user responses indexes by adding a given new response index
+func AddQuizUserResponse(db *mongo.Database, ctx context.Context,
+	id int32, newUserResponseId int32) error {
 
 	collection := db.Collection(collectionNameQuiz)
 
 	filter := bson.D{{Key: "idQuiz", Value: id}}
 	update := bson.D{
 		{Key: "$push", Value: bson.D{
-			{Key: "respondedQuizzes", Value: newRespondedQuizId},
+			{Key: "userResponses", Value: newUserResponseId},
 		}},
 	}
 
@@ -185,9 +208,9 @@ func AddQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
 	return err
 }
 
-// Updates a Quiz responded quizzes indexes by deleting a given existing response index
-func DeleteQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
-	id int32, respondedQuizId int32) error {
+// Updates a Quiz response indexes by deleting a given existing response index
+func DeleteQuizUserResponse(db *mongo.Database, ctx context.Context,
+	id int32, responseId int32) error {
 
 	quiz, err := GetQuiz(db, ctx, id)
 	if err != nil {
@@ -195,14 +218,14 @@ func DeleteQuizRespondedQuiz(db *mongo.Database, ctx context.Context,
 	}
 
 	// Create new slice without the target id
-	newRespondedQuizzes := make([]int32, 0, len(quiz.RespondedQuizzes))
-	for _, v := range quiz.RespondedQuizzes {
-		if v != respondedQuizId {
-			newRespondedQuizzes = append(newRespondedQuizzes, v)
+	newUserResponses := make([]int32, 0, len(quiz.UserResponses))
+	for _, v := range quiz.UserResponses {
+		if v != responseId {
+			newUserResponses = append(newUserResponses, v)
 		}
 	}
 
-	err = UpdateQuizRespondedQuizzes(db, ctx, id, newRespondedQuizzes)
+	err = UpdateQuizUserResponses(db, ctx, id, newUserResponses)
 	return err
 }
 
@@ -216,7 +239,7 @@ func DeleteQuiz(db *mongo.Database, ctx context.Context, id int32) error {
 }
 
 // ============================================================
-// ======================== HANDLER ===========================
+// ======================== HANDLERS ==========================
 // ============================================================
 
 // "/api/resources/quizzes[/param]" handler. param can be a quiz id or a date.
@@ -227,11 +250,8 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 		paramStr := utility.GetSuffixParams("/api/resources/quizzes/", r)
 
 		if paramStr == "" {
-			fmt.Println("Request received on '/api/resources/quizzes'")
 			quizHandlerWithoutParam(db, w, r)
 		} else {
-			fmt.Println("Request received on '/api/resources/quizzes/param'")
-
 			// Checks if the parameter is an integer
 			id64, err := strconv.ParseInt(paramStr, 10, 32)
 			if err == nil {
@@ -254,6 +274,7 @@ func QuizHandler(db *mongo.Database) http.HandlerFunc {
 
 // "/api/resources/quizzes[?stats=true]" handler
 func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Request received on '/api/resources/quizzes'")
 
 	// Only GET
 	if r.Method != http.MethodGet {
@@ -309,8 +330,9 @@ func quizHandlerWithoutParam(db *mongo.Database, w http.ResponseWriter, r *http.
 	}
 }
 
-// "/api/resources/quizzes/date" handler
+// "/api/resources/quizzes/date[?stats=true]" handler
 func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Request, date time.Time) {
+	fmt.Println("Request received on '/api/resources/quizzes/date'")
 
 	// Only GET
 	if r.Method != http.MethodGet {
@@ -318,22 +340,46 @@ func quizHandlerWithDate(db *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Getting the Quiz with this date in DB
-	quiz, err := GetQuizWithDate(db, r.Context(), date)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, "No Quiz for this date", http.StatusNotFound)
+	// gets the potential stats parameters
+	query := r.URL.Query()
+	stats := query.Get("stats")
+
+	if stats == "true" {
+
+		// Getting the Quiz with this date with its stats in DB
+		quiz, err := GetQuizWithDateWithStats(db, r.Context(), date)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No Quiz for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-		return
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quiz)
+
+	} else {
+
+		// Getting the Quiz with this date in DB
+		quiz, err := GetQuizWithDate(db, r.Context(), date)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				http.Error(w, "No Quiz for this id", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(quiz)
+
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(quiz)
 }
 
 // "/api/resources/quizzes/id[?stats=true]" handler
 func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Request, id int32) {
+	fmt.Println("Request received on '/api/resources/quizzes/id'")
 
 	// Only GET
 	if r.Method != http.MethodGet {
@@ -378,7 +424,7 @@ func quizHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// "/api/resources/quizzes/comments/id" handler
+// "/api/resources/quizzes/comments/id" handler, with id being a Quiz id
 func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Request received on '/api/resources/quizzes/comments/id'")
@@ -418,13 +464,13 @@ func QuizCommentsHandler(db *mongo.Database) http.HandlerFunc {
 
 		comments := make([]Comment, 0)
 		// Search for responses to quizzes : get their informations for our comments
-		for _, idResponses := range quiz.RespondedQuizzes {
+		for _, idUserResponses := range quiz.UserResponses {
 
-			// Get the QuizResponses
-			responses, err := GetQuizResponses(db, r.Context(), idResponses)
+			// Get the UserResponses
+			responses, err := GetUserResponses(db, r.Context(), idUserResponses)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					http.Error(w, "No Quiz responses for this id", http.StatusNotFound)
+					http.Error(w, "No User responses for this id", http.StatusNotFound)
 					return
 				}
 				http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)

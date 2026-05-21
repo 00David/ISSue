@@ -2,10 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+/**
+ * Renders the login page, allowing to enter its username and password.
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {(connectedId: number) => void} props.setConnected Function to set a new connected id.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @returns {JSX.Element} the login page.
+ */
 function Login({connectedId, setConnected, showError}) {
     const navigate = useNavigate();
 
+    /** Current entered username */
     const [username, setUsername] = useState("");
+    /** Current entered password */
     const [password, setPassword] = useState("");
 
     useEffect(() => {
@@ -15,18 +24,23 @@ function Login({connectedId, setConnected, showError}) {
         }
     }, [connectedId, navigate]);
 
+    /**
+     * Called on login submit, if entered infos are okay, connect the user and redirects him to its profile page.
+     * Otherwise, displays an error popup.
+     * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
             // Login
-            await axios.post('/api/authentification/login', {
+            await axios.post("/api/authentification/login", {
                 username,
                 password
             });
 
             // If it went previously ok, get the connected user id
-            const res = await axios.get('/api/authentification/me');
+            const res = await axios.get("/api/authentification/me");
             setConnected({ // triggers a redirection to the user profile page (via local useEffect)
                 id: res.data.id,
                 username: username
@@ -86,6 +100,7 @@ function Login({connectedId, setConnected, showError}) {
                     Login
                 </button>
 
+                {/* Link to sign up */}
                 <p className="text-sm text-center mt-2">
                     Don't have an account?{" "}
                     <Link className="text-peacefullissue no-underline transition-colors duration-300 ease-in-out hover:text-[#6a9bc7] hover:underline" 

@@ -2,6 +2,10 @@ import { useEffect } from 'react';
 
 import Leaderboard from './Leaderboard.jsx'
 
+/**
+ * Renders the leaderbord page, containing the Leaderboard component.
+ * @returns {JSX.Element} the leaderbord page.
+ */
 function LeaderboardPage() {
 
     useEffect(() => {

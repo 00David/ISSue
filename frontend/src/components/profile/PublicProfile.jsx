@@ -3,23 +3,32 @@ import { formatDate } from "../utility/utils";
 import { Star, Rocket, Trophy, Calendar, User } from "lucide-react";
 import { Link } from 'react-router-dom';
 
-function PublicProfile({user, quizResponses}) {
+/**
+ * Renders the public profile page of a user.
+ * Allows statistics display and recent activity tracking.
+ *
+ * @param {Object} props.user The current user object.
+ * @param {Array<Object>} props.userResponses List of quiz responses from the user.
+ *
+ * @returns {JSX.Element} the public profile page.
+ */
+function PublicProfile({user, userResponses}) {
     const navigate = useNavigate();
 
-    /** Total number of quizzes responded. */
-    const totalQuizzes = quizResponses.length;
+    /** Total number of user quiz responses */
+    const totalUserResponses = userResponses.length;
 
-    /** Average score for quizzes reponded. At most one digit after the decimal point. */
-    const averageScore = quizResponses.length > 0 
-        ? (quizResponses.reduce((acc, q) => {
-            const correct = q.responses.filter(r => r.correct).length;
+    /** Average score for user quiz responses. At most one digit after the decimal point. */
+    const averageScore = userResponses.length > 0 
+        ? (userResponses.reduce((acc, q) => {
+            const correct = q.questionsResponses.filter(r => r.correct).length;
             return acc + correct;
-        }, 0) / quizResponses.length).toFixed(1)
+        }, 0) / userResponses.length).toFixed(1)
         : 0;
     
     /** Get given notes (a note at 0 = no note given, don't keep it). */
-    const validNotes = quizResponses.map(q => q.note).filter(note => note > 0);
-    /** Average note given for responded quizzes. */
+    const validNotes = userResponses.map(q => q.note).filter(note => note > 0);
+    /** Average note given for user quiz responses */
     const averageNote = validNotes.length > 0
     ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
     : 0;
@@ -57,7 +66,7 @@ function PublicProfile({user, quizResponses}) {
                             <Trophy className="w-5 h-5 text-blue-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Quizzes Completed</h3>
-                        <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
+                        <p className="text-3xl font-bold text-white">{totalUserResponses}</p>
                     </div>
                 </div>
 
@@ -69,7 +78,7 @@ function PublicProfile({user, quizResponses}) {
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Score</h3>
                         <p className="text-3xl font-bold text-white">
-                            {totalQuizzes > 0 ? averageScore+"/10" : "No data yet"}
+                            {totalUserResponses > 0 ? averageScore+"/10" : "No data yet"}
                         </p>
                     </div>
                 </div>
@@ -106,16 +115,23 @@ function PublicProfile({user, quizResponses}) {
             <div className="bg-midissue rounded-xl p-6 shadow-lg">
                 <h2 className="text-2xl font-bold text-white mb-4">Recent Activity</h2>
                 
-                {quizResponses.length == 0 ? (
+                {userResponses.length == 0 ? (
                     <p className="text-gray-400 text-center py-8">No quizzes completed yet.</p>
                 ) : (
                     <div className="space-y-3">
-                        {quizResponses.slice(0, 5).map((quizResponse, index) => {
-                            const score = quizResponse.responses.filter(r => r.correct).length;
-                            const date = new Date(quizResponse.responseDate);
+                        {[...userResponses] // user responses sorted from older to sooner
+                            .sort(
+                                (a, b) =>
+                                    new Date(b.responseDate) -
+                                    new Date(a.responseDate)
+                            )
+                            .slice(0, 5).map((userResponse, index) => {
+                            const score = userResponse.questionsResponses.filter(r => r.correct).length;
+                            const date = new Date(userResponse.responseDate);
                             return (
                                 <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
-                                    onClick={() => navigate("/quiz/"+quizResponse.idQuiz)}
+                                    title="Go to quiz"
+                                    onClick={() => navigate("/quiz/"+userResponse.idQuiz)}
                                     >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold ${
@@ -127,26 +143,26 @@ function PublicProfile({user, quizResponses}) {
                                             {score}/10
                                         </div>
                                         <div>
-                                            <p className="text-white font-medium">Quiz #{quizResponse.idQuiz}</p>
+                                            <p className="text-white font-medium">Quiz #{userResponse.idQuiz}</p>
                                             <p className="text-gray-400 text-sm">{formatDate(date)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        {quizResponse.note > 0 && (
+                                        {userResponse.note > 0 && (
                                             <div className="flex gap-1">
                                                 {Array.from({ length: 5 }, (_, i) => (
                                                 <Star
                                                     key={i}
                                                     className="w-4 h-4"
-                                                    fill={i < quizResponse.note ? "gold" : "none"}
-                                                    color={i < quizResponse.note ? "gold" : "currentColor"}
+                                                    fill={i < userResponse.note ? "gold" : "none"}
+                                                    color={i < userResponse.note ? "gold" : "currentColor"}
                                                 />
                                                 ))}
                                             </div>
                                         )}
-                                        {quizResponse.comment && (
+                                        {userResponse.comment && (
                                             <span className="text-gray-400 text-sm italic">
-                                                "{quizResponse.comment.slice(0, 30)}{quizResponse.comment.length > 30 ? "..." : ""}"
+                                                "{userResponse.comment.slice(0, 30)}{userResponse.comment.length > 30 ? "..." : ""}"
                                             </span>
                                         )}
                                     </div>

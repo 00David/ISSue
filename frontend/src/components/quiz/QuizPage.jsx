@@ -5,11 +5,20 @@ import ISSPosition from '../iss/ISSPosition.jsx'
 import Quiz from './Quiz.jsx'
 import NotFound from '../notfound/NotFound.jsx'
 
+/**
+ * Renders a specific quiz page.
+ * @param {number} props.connectedId -1 if not connected, or the connected user id.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @param {(message: string) => void} props.showInfo Function to display an informational message.
+ * @returns {JSX.Element} the quiz page.
+ */
 function QuizPage({connectedId, showError, showInfo}) {
     const location = useLocation();
-    const urlIdQuiz = location.pathname.split("/").pop();
+    const urlIdQuiz = location.pathname.split("/").pop(); // get the quiz id from the URL
 
+    /** Quiz date */
     const [quizDate, setQuizDate] = useState(null);
+    
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {

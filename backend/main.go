@@ -10,10 +10,15 @@ import (
 	"github.com/00David/ISSue/backend/authentification"
 	"github.com/00David/ISSue/backend/external_apis"
 	"github.com/00David/ISSue/backend/resources"
+	"github.com/00David/ISSue/backend/utility"
 	"github.com/joho/godotenv"
 )
 
-// main.go
+// Entry point for the backend :
+//
+// - If no parameter is given, i.e. by launching with go run *.go, a cloud MongoAtlas "issue" database is used
+//
+// - If a "local" parameter is given, i.e. by launching with go run *.go local, a local "issue" database is used
 func main() {
 	godotenv.Load() // loads local .env file if present
 
@@ -40,7 +45,7 @@ func main() {
 	}
 
 	// Database connection
-	client, db := connect_db(dbPassword, local_db)
+	client, db := utility.ConnectDatabase(dbPassword, local_db)
 	defer func() {
 		if err := client.Disconnect(context.Background()); err != nil {
 			log.Println("⚠️ Disconnection error.\nDetails : ", err)
@@ -66,12 +71,13 @@ func main() {
 	http.HandleFunc("/api/resources/quizzes", resources.QuizHandler(db))
 	http.HandleFunc("/api/resources/quizzes/", resources.QuizHandler(db))
 
-	http.HandleFunc("/api/resources/quiz-responses", resources.QuizResponsesHandler(db, jwtSecret))
-	http.HandleFunc("/api/resources/quiz-responses/", resources.QuizResponsesHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/user-responses", resources.UserResponsesHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/user-responses/", resources.UserResponsesHandler(db, jwtSecret))
 
 	http.HandleFunc("/api/resources/users/leaderboard", resources.UsersLeaderboardHandler(db))
 	http.HandleFunc("/api/resources/users/pin", resources.UsersPinQuizHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/unpin", resources.UsersUnpinQuizHandler(db, jwtSecret))
+	http.HandleFunc("/api/resources/users/responded/", resources.UsersRespondedQuizzesHandler(db))
 	http.HandleFunc("/api/resources/users", resources.UsersHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 

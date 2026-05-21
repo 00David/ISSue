@@ -4,34 +4,69 @@ import { formatDate } from "../utility/utils";
 import { Link } from 'react-router-dom';
 import { Star, Rocket, Trophy, Calendar, Mail, Lock, User, Edit2, LogOut, Trash2, Pin, PinOff } from "lucide-react";
 
-function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAccount, onUnpin, showError, showInfo}) {
+/**
+ * Renders the private profile page of the connected user.
+ * Allows profile editing, password update, account deletion,
+ * statistics display, pinned quizzes management, and recent activity tracking.
+ *
+ * @param {Object} props.user The current user object.
+ * @param {Array<Object>} props.userResponses List of quiz responses from the user.
+ * @param {() => void} props.onLogout Callback to log the user out.
+ * @param {(updates: Object) => Promise<void>} props.onUpdateUser Callback to update user data.
+ * @param {() => Promise<void>} props.onDeleteAccount Callback to delete the account.
+ * @param {(idQuiz: number) => Promise<void>} props.onUnpin Callback to unpin a quiz.
+ * @param {(message: string) => void} props.showError Function to display an error message.
+ * @param {(message: string) => void} props.showInfo Function to display an information message.
+ *
+ * @returns {JSX.Element} the private profile page.
+ */
+function PrivateProfile({user, userResponses, onLogout, onUpdateUser, onDeleteAccount, onUnpin, showError, showInfo}) {
     const navigate = useNavigate();
 
+    /** Indicates if the editing profile view is currently showed */
     const [isEditing, setIsEditing] = useState(false);
+    /** The currently edited username */
     const [editedUsername, setEditedUsername] = useState(user.username);
+    /** The currently edited user email */
     const [editedEmail, setEditedEmail] = useState(user.email);
+    /** The currently edited new password */
     const [newPassword, setNewPassword] = useState("");
+    /** The currently edited new password confirmation */
     const [confirmPassword, setConfirmPassword] = useState("");
+
+    /** Indicates if the deletion confirmation paragraph is visible */
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    /** Total number of quizzes responded. */
-    const totalQuizzes = quizResponses.length;
+    /** Total number of user quiz responses */
+    const totalUserResponses = userResponses.length;
 
-    /** Average score for quizzes reponded. At most one digit after the decimal point. */
-    const averageScore = quizResponses.length > 0 
-        ? (quizResponses.reduce((acc, q) => {
-            const correct = q.responses.filter(r => r.correct).length;
+    /** Average score for user quiz responses. At most one digit after the decimal point. */
+    const averageScore = userResponses.length > 0 
+        ? (userResponses.reduce((acc, q) => {
+            const correct = q.questionsResponses.filter(r => r.correct).length;
             return acc + correct;
-        }, 0) / quizResponses.length).toFixed(1)
+        }, 0) / userResponses.length).toFixed(1)
         : 0;
     
     /** Get given notes (a note at 0 = no note given, don't keep it). */
-    const validNotes = quizResponses.map(q => q.note).filter(note => note > 0);
-    /** Average note given for responded quizzes. */
+    const validNotes = userResponses.map(q => q.note).filter(note => note > 0);
+    /** Average note given for user quiz responses. */
     const averageNote = validNotes.length > 0
-    ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
-    : 0;
+        ? (validNotes.reduce((acc, note) => acc + note, 0) / validNotes.length).toFixed(1)
+        : 0;
 
+    /**
+     * Saves user profile modifications (username, email, password).
+     *
+     * Behavior:
+     * - Validates password confirmation if password is changed
+     * - Builds a diff object of modified fields only
+     * - Calls onUpdateUser to persist changes
+     * - Resets editing state on success
+     * - Restores previous values and shows error on failure
+     * 
+     * @returns {Promise<void>}
+     */
     const handleSaveChanges = async () => {
         if (newPassword && newPassword != confirmPassword) {
             showError("Passwords don't match !");
@@ -69,10 +104,22 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
         }
     };
 
+    /**
+     * Handles account deletion with a confirmation step.
+     *
+     * Behavior:
+     * - First call triggers confirmation UI
+     * - Second call (if confirmed) deletes account
+     * - Removes cached quizzes from localStorage
+     * - Displays success or error messages
+
+     * @returns {Promise<void>}
+     */
     const handleDeleteAccount = async () => {
         if (showDeleteConfirm) {
             try {
                 await onDeleteAccount();
+                localStorage.removeItem("quizzes"); // ensures that new statistics will be taken into account for the quizzes list
                 showInfo("Profile deleted successfully");
             } catch (error) {
                 console.error("Error deleting account:\n", error.response.data);
@@ -225,7 +272,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                             <Trophy className="w-5 h-5 text-blue-400" />
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Quizzes Completed</h3>
-                        <p className="text-3xl font-bold text-white">{totalQuizzes}</p>
+                        <p className="text-3xl font-bold text-white">{totalUserResponses}</p>
                     </div>
                 </div>
 
@@ -237,7 +284,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                         </div>
                         <h3 className="text-gray-400 text-sm font-medium">Average Score</h3>
                         <p className="text-3xl font-bold text-white">
-                            {totalQuizzes > 0 ? averageScore+"/10" : "No data yet"}
+                            {totalUserResponses > 0 ? averageScore+"/10" : "No data yet"}
                         </p>
                     </div>
                 </div>
@@ -285,6 +332,7 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                         {user.pinnedQuizzes.map((quizId) => (
                             <div
                                 key={quizId}
+                                title="Go to quiz"
                                 onClick={() => navigate("/quiz/" + quizId)}
                                 className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
                             >
@@ -317,22 +365,23 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
             <div className="bg-midissue rounded-xl p-6 shadow-lg">
                 <h2 className="text-2xl font-bold text-white mb-4">Your Recent Activity</h2>
                 
-                {quizResponses.length == 0 ? (
+                {userResponses.length == 0 ? (
                     <p className="text-gray-400 text-center py-8">No quizzes completed yet.</p>
                 ) : (
                     <div className="space-y-3">
-                        {[...quizResponses]
+                        {[...userResponses] // user responses sorted from older to sooner
                             .sort(
                                 (a, b) =>
                                     new Date(b.responseDate) -
                                     new Date(a.responseDate)
                             )
-                            .slice(0, 5).map((quizResponse, index) => {
-                            const score = quizResponse.responses.filter(r => r.correct).length;
-                            const date = new Date(quizResponse.responseDate);
+                            .slice(0, 5).map((userResponse, index) => {
+                            const score = userResponse.questionsResponses.filter(r => r.correct).length;
+                            const date = new Date(userResponse.responseDate);
                             return (
                                 <div key={index} className="flex items-center justify-between p-4 bg-[#16182e] rounded-lg hover:bg-[#1a1d3a] transition-colors cursor-pointer"
-                                    onClick={() => navigate("/quiz/"+quizResponse.idQuiz)}
+                                    title="Go to quiz"
+                                    onClick={() => navigate("/quiz/"+userResponse.idQuiz)}
                                     >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold ${
@@ -344,26 +393,26 @@ function PrivateProfile({user, quizResponses, onLogout, onUpdateUser, onDeleteAc
                                             {score}/10
                                         </div>
                                         <div>
-                                            <p className="text-white font-medium">Quiz #{quizResponse.idQuiz}</p>
+                                            <p className="text-white font-medium">Quiz #{userResponse.idQuiz}</p>
                                             <p className="text-gray-400 text-sm">{formatDate(date)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        {quizResponse.note > 0 && (
+                                        {userResponse.note > 0 && (
                                             <div className="flex gap-1">
                                                 {Array.from({ length: 5 }, (_, i) => (
                                                 <Star
                                                     key={i}
                                                     className="w-4 h-4"
-                                                    fill={i < quizResponse.note ? "gold" : "none"}
-                                                    color={i < quizResponse.note ? "gold" : "currentColor"}
+                                                    fill={i < userResponse.note ? "gold" : "none"}
+                                                    color={i < userResponse.note ? "gold" : "currentColor"}
                                                 />
                                                 ))}
                                             </div>
                                         )}
-                                        {quizResponse.comment && (
+                                        {userResponse.comment && (
                                             <span className="text-gray-400 text-sm italic">
-                                                "{quizResponse.comment.slice(0, 30)}{quizResponse.comment.length > 30 ? "..." : ""}"
+                                                "{userResponse.comment.slice(0, 30)}{userResponse.comment.length > 30 ? "..." : ""}"
                                             </span>
                                         )}
                                     </div>
