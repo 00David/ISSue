@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { customIcon } from "../utility/utils.js"
 import api from "../../api/axios";
 
 import Spinner from "../utility/Spinner.jsx";
@@ -147,7 +148,10 @@ function ISS_Position({canShowCurrentPosition, ISSQuizDate}) {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution="&copy; OpenStreetMap contributors"
                     />
-                    <Marker position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}>
+                    <Marker 
+                        position={currentIsSelected ? ISSCurrentPosition : ISSQuizPosition}
+                        icon={customIcon}
+                        >
                         <Popup>{currentIsSelected ? "🛰️ ISS is here!" : "🛰️ ISS was here!"}</Popup>
                     </Marker>
                 </MapContainer>
