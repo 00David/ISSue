@@ -488,7 +488,7 @@ func UsersPinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc 
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " succesfully pinned",
+			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " successfully pinned",
 		})
 	}
 }
@@ -541,7 +541,7 @@ func UsersUnpinQuizHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFun
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " succesfully unpinned",
+			"message": "quiz " + strconv.Itoa(int(req.IdQuiz)) + " successfully unpinned",
 		})
 	}
 }
