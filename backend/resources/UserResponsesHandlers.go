@@ -105,7 +105,7 @@ func UserResponsesHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc
 		if idStr == "" && len(query) == 0 {
 			userResponsesHandlerWithoutId(db, w, r, jwtSecret)
 		} else if idQuizStr != "" && idUserStr != "" {
-			userResponsesHandlerWithQuizAnsUser(db, w, r, idQuizStr, idUserStr)
+			userResponsesHandlerWithQuizAndUser(db, w, r, idQuizStr, idUserStr)
 		} else {
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
@@ -213,7 +213,7 @@ func userResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 }
 
 // "/api/resources/user-responses?idquiz=’id1’&iduser=’id2’" handler
-func userResponsesHandlerWithQuizAnsUser(db *mongo.Database, w http.ResponseWriter,
+func userResponsesHandlerWithQuizAndUser(db *mongo.Database, w http.ResponseWriter,
 	r *http.Request, idQuizStr string, idUserStr string) {
 	fmt.Println("Request received on '/api/resources/user-responses?idquiz=’...’&iduser=’...’'")
 
