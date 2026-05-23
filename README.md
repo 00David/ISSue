@@ -6,6 +6,7 @@
 
 Lien du répertoire GitHub : https://github.com/00David/ISSue  
 **Lien du site**, déployé avec Render : https://issue-odz6.onrender.com/  
+Le rapport est disponible [ici](Rapport_projet_PC3R_VADIMON.pdf).  
 
 ## Principales fonctionnalités
 
