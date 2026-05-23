@@ -235,7 +235,8 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		idStr := utility.GetSuffixParams("/api/resources/users/", r)
 
 		if idStr == "" {
-			userHandlerWithoutId(db, w, r)
+			http.Error(w, "Must provide an id", http.StatusBadRequest)
+			return
 		} else {
 			// Checks that the parameter is an integer
 			id64, err := strconv.ParseInt(idStr, 10, 32)
@@ -247,40 +248,6 @@ func UsersHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 		}
 
 	}
-}
-
-// "/api/resources/users" handler
-func userHandlerWithoutId(db *mongo.Database, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Request received on '/api/resources/users'")
-
-	// Only POST
-	if r.Method != http.MethodPost {
-		http.Error(w, "Unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Body decoding
-	var req User
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// Creation of the User in DB
-	id, err := CreateUser(db, r.Context(), req.Username, req.Email, req.Password, time.Now().UTC())
-	if err != nil {
-		http.Error(w, "Internal error : "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]any{
-		"message": "user successfuly created in DB",
-		"idUser":  id,
-	})
 }
 
 // "/api/resources/users/id" handler

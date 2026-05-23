@@ -75,7 +75,6 @@ func main() {
 	http.HandleFunc("/api/resources/users/pin", resources.UsersPinQuizHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/unpin", resources.UsersUnpinQuizHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/responded/", resources.UsersRespondedQuizzesHandler(db))
-	http.HandleFunc("/api/resources/users", resources.UsersHandler(db, jwtSecret))
 	http.HandleFunc("/api/resources/users/", resources.UsersHandler(db, jwtSecret))
 
 	fmt.Println("Server started on http://" + addr + " ✅")
