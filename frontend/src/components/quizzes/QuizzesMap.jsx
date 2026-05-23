@@ -68,7 +68,7 @@ function QuizzesMap({quizzes}) {
                     const quizDate = new Date(quiz.date).toISOString();
                     
                     try {
-                        const response = await api.get(`/api/resources/iss/${encodeURIComponent(quizDate)}`);
+                        const response = await api.get("/api/resources/iss/"+encodeURIComponent(quizDate));
                         positionsMap.set(quizDate, {
                             latitude: parseFloat(response.data.latitude),
                             longitude: parseFloat(response.data.longitude),
@@ -78,7 +78,7 @@ function QuizzesMap({quizzes}) {
                             date: quiz.date
                         });
                     } catch (error) {
-                        console.error(`Error while fetching ISS position for quiz date ${quizDate}:`, error.response?.data);
+                        console.error("Error while fetching ISS position for quiz date "+quizDate+" :", error.response?.data);
                     }
                 }
                 setQuizPositionsMap(positionsMap);

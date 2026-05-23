@@ -344,7 +344,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "user successfuly deleted from DB",
+			"message": "user successfully deleted from DB",
 		})
 
 	case http.MethodPatch: // PATCH
@@ -428,7 +428,7 @@ func userHandlerWithId(db *mongo.Database, w http.ResponseWriter, r *http.Reques
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "user information(s) successfuly updated in DB",
+			"message": "user information(s) successfully updated in DB",
 		})
 
 	default:

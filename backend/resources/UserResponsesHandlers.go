@@ -207,7 +207,7 @@ func userResponsesHandlerWithoutId(db *mongo.Database, w http.ResponseWriter,
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]any{
-		"message":         "user responses successfuly created in DB",
+		"message":         "user responses successfully created in DB",
 		"idUserResponses": idUserR,
 	})
 }
