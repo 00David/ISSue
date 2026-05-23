@@ -26,6 +26,8 @@ func LogoutHandler(db *mongo.Database, jwtSecret []byte) http.HandlerFunc {
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteNoneMode,
 			Expires:  time.Unix(0, 0),
 			MaxAge:   -1,
 		})
