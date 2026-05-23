@@ -1,5 +1,7 @@
 # ISSue - David VADIMON
 
+![ISSue banner](ISSue_banner.png)
+
 **ISSue** est une application créant de manière dynamique et journalière un quiz inspiré de la position exacte de la station spatiale internationale, au moment de la génération.  
 
 Lien du répertoire GitHub : https://github.com/00David/ISSue  
