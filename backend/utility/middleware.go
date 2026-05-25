@@ -19,7 +19,7 @@ func EnableCORS(next http.Handler) http.Handler {
 			"Content-Type, Authorization",
 		)
 		w.Header().Set("Access-Control-Allow-Methods",
-			"GET, POST, PUT, DELETE, OPTIONS",
+			"GET, POST, PATCH, PUT, DELETE, OPTIONS",
 		)
 
 		// Handle OPTIONS preflight
