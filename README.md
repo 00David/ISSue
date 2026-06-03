@@ -1,8 +1,36 @@
-# ISSue - David VADIMON
-
 ![ISSue banner](ISSue_banner.png)
 
-**ISSue** est une application créant de manière dynamique et journalière un quiz inspiré de la position exacte de la station spatiale internationale, au moment de la génération.  
+# 🎬 Demonstration
+
+![demo](demo.gif)
+
+# [EN] ISSue
+
+**ISSue** is an application that dynamically generates a daily quiz inspired by the exact position of the International Space Station at the time of generation (on average around 5 AM UTC).
+
+GitHub repository link: https://github.com/00David/ISSue  
+**Site link**, deployed with Render: https://issue-odz6.onrender.com/  
+The report is available [here](Rapport_projet_PC3R_VADIMON.pdf) (in french).  
+
+## Main features
+
+- **Track the current live position of the International Space Station**, from the home page.  
+- **Answer the questions of a given quiz**. At the end of the quiz, the user sees their results, and has the option to **post their answers optionally accompanied by a comment and/or a rating** given to the quiz.  
+- **View their answers to a previously completed quiz**.  
+- **View the comments on a given quiz**.  
+- **Pin/unpin a quiz** while logged in.  
+- **Access all quizzes on the site** in 2 ways:  
+    - Either via the **complete quiz list**. The user also has the option to filter the displayed quizzes and apply a sort order on one of the columns.  
+    - Either via the **world map**: each quiz is then placed on the map according to the ISS position at the time of the quiz.  
+- **Access the site's global leaderboard**: all users are displayed from best to worst performing (by total number of points).  
+- **Create a profile**, by providing a username, password, and email address.  
+- **Log in to an existing profile**, by providing a username and password.  
+- **Access another user's profile**, to view their statistics and activity.  
+- **Access their private profile**, to view their statistics, their activity, **edit their personal information**, log out, or **delete their profile**.
+
+# [FR] ISSue
+
+**ISSue** est une application créant de manière dynamique et journalière un quiz inspiré de la position exacte de la station spatiale internationale, au moment de la génération (en moyenne vers 5h UTC).  
 
 Lien du répertoire GitHub : https://github.com/00David/ISSue  
 **Lien du site**, déployé avec Render : https://issue-odz6.onrender.com/  
