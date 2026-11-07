@@ -9,7 +9,7 @@
 **ISSue** is an application that dynamically generates a daily quiz inspired by the exact position of the International Space Station at the time of generation (on average around 5 AM UTC).
 
 GitHub repository link: https://github.com/00David/ISSue  
-**Site link**, deployed with Render: https://issue-odz6.onrender.com/  
+**Site link**, deployed with Render: https://issue-odz6.onrender.com/ (the first visit may take about 30 seconds while the server wakes up)  
 The report is available [here](Rapport_projet_PC3R_VADIMON.pdf) (in french).  
 
 ## Main features
@@ -33,7 +33,7 @@ The report is available [here](Rapport_projet_PC3R_VADIMON.pdf) (in french).
 **ISSue** est une application créant de manière dynamique et journalière un quiz inspiré de la position exacte de la station spatiale internationale, au moment de la génération (en moyenne vers 5h UTC).  
 
 Lien du répertoire GitHub : https://github.com/00David/ISSue  
-**Lien du site**, déployé avec Render : https://issue-odz6.onrender.com/  
+**Lien du site**, déployé avec Render : https://issue-odz6.onrender.com/ (la première visite peut prendre environ 30 secondes de chargement le temps que le serveur se réveille)  
 Le rapport est disponible [ici](Rapport_projet_PC3R_VADIMON.pdf).  
 
 ## Principales fonctionnalités
